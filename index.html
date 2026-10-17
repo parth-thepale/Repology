@@ -8,8 +8,31 @@
       name="description"
       content="High-density industrial orientation control plane for public GitHub repositories. Telemetry, verified manifests, sanitized markdown terminal, and contribution entry points."
     />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23000%22/><text y=%22.75em%22 x=%2250%25%22 text-anchor=%22middle%22 font-family=%22monospace%22 font-size=%2265%22 font-weight=%22bold%22 fill=%22%2310B981%22>R</text></svg>" />
-    
+    <meta name="theme-color" content="#000000" />
+
+    <!-- OpenGraph Metadata for Social / Crawlers -->
+    <meta property="og:title" content="REPOLOGY // REPOSITORY_ORIENTATION_CONTROL_PLANE" />
+    <meta
+      property="og:description"
+      content="Every repository has a story. Understand it before you open the code. High-density GitHub orientation radar."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://repology.vercel.app/" />
+    <meta property="og:site_name" content="Repology Control Plane" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="REPOLOGY // REPOSITORY_ORIENTATION_CONTROL_PLANE" />
+    <meta
+      name="twitter:description"
+      content="Every repository has a story. Understand it before you open the code. Real-time GitHub orientation radar."
+    />
+
+    <!-- Precision SVG Radar Favicon -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23222' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%23333' stroke-width='1'/%3E%3Cline x1='16' y1='2' x2='16' y2='30' stroke='%23222' stroke-width='1'/%3E%3Cline x1='2' y1='16' x2='30' y2='16' stroke='%23222' stroke-width='1'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%2310B981'/%3E%3C/svg%3E"
+    />
+
     <!-- Precision Typography: Geist & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -46,30 +69,112 @@
           </div>
 
           <div class="header-right">
-            <div class="header-telemetry" id="header-rate-telemetry">
-              <span class="telemetry-label">API_QUOTA:</span>
+            <!-- Dynamic Rate Limit Telemetry Engine Display (Clickable for Ephemeral PAT Slot) -->
+            <button
+              type="button"
+              class="header-telemetry-btn"
+              id="header-rate-telemetry"
+              title="Click to view API rate telemetry or insert optional GitHub PAT token"
+              aria-label="GitHub API quota telemetry and token configuration"
+            >
+              <span class="telemetry-label">QUOTA:</span>
               <span class="telemetry-val" id="telemetry-rate-remaining">READY</span>
               <span class="telemetry-divider">|</span>
-              <span class="telemetry-label">RATE:</span>
+              <span class="telemetry-label">RESET:</span>
               <span class="telemetry-val" id="telemetry-rate-reset">60/HR</span>
+              <span class="telemetry-badge-token" id="telemetry-token-status">[NO_TOKEN]</span>
+            </button>
+
+            <!-- Hotkeys Quick Badge -->
+            <div class="header-hotkeys-hint" title="Global shortcuts: / to search, 1-5 to switch tabs, ESC to reset">
+              <span class="keycap">/ SEARCH</span>
+              <span class="keycap">1-5 TABS</span>
+              <span class="keycap">ESC</span>
             </div>
+
             <a
-              href="https://github.com"
+              href="https://github.com/parth-thepale/Repology"
               class="header-action-btn"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="GitHub API link"
+              aria-label="GitHub Source Code"
             >
-              GH_API ↗
+              SOURCE ↗
             </a>
           </div>
         </div>
       </header>
 
-      <!-- Main Operational Control Surface -->
+      <!-- Main Operational Control Surface with Prerendered Semantic Blueprint -->
       <main id="app" class="main-content" role="main" aria-live="polite">
-        <!-- Injected dynamically by main.js -->
+        <div class="landing-console">
+          <div class="section-blueprint-bar">
+            <span class="blueprint-eyebrow">00 // REPOSITORY_ORIENTATION_RADAR</span>
+            <span class="blueprint-coords">[SYS_GRID: 1440px / 1px_HAIRLINE]</span>
+          </div>
+          <section class="hero-block">
+            <div class="hero-header-meta">
+              <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>ACTIVE_RECON</span>
+              <span class="badge-tag">[NO_AUTH_REQUIRED]</span>
+              <span class="badge-tag">[READ_ONLY_REST]</span>
+            </div>
+            <h1 class="hero-headline">Every repository has a story. Understand it before you open the code.</h1>
+            <p class="hero-subline">
+              Paste any public GitHub repository to instantly explore its verified tech stack, file hierarchy, honest setup commands, and safe contribution entry points.
+            </p>
+            <div class="radar-input-panel">
+              <div class="input-prefix-box">
+                <span class="prompt-prefix">gh://github.com/</span>
+                <input
+                  type="text"
+                  class="radar-input"
+                  placeholder="owner/repo (e.g. vitejs/vite or full URL)"
+                  readonly
+                />
+              </div>
+            </div>
+          </section>
+        </div>
       </main>
+
+      <!-- Ephemeral PAT Token Modal -->
+      <dialog id="token-dialog" class="technical-modal" aria-labelledby="dialog-title">
+        <div class="modal-box">
+          <div class="modal-header">
+            <span class="panel-id-label" id="dialog-title">CONFIG // EPHEMERAL_GITHUB_TOKEN</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-close-dialog">[CLOSE ✕]</button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-desc">
+              By default, Repology requires zero authentication (limited to GitHub's <strong>60 unauthenticated requests/hr per IP</strong>).
+            </p>
+            <p class="modal-desc">
+              Power users can drop an ephemeral GitHub Personal Access Token (PAT) below to instantly elevate your limit to <strong>5,000 requests/hr</strong>.
+            </p>
+            <div class="token-input-wrapper">
+              <label for="input-pat-token" class="form-label" style="font-family: var(--font-mono); font-size: 11px;">
+                GITHUB_PERSONAL_ACCESS_TOKEN (Optional):
+              </label>
+              <input
+                type="password"
+                id="input-pat-token"
+                class="form-input"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx or github_pat_xxxx"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div class="token-security-callout">
+              <span class="badge-tag badge-tag-nominal">[AIRGAP_GUARANTEE]</span>
+              <span>This token is held strictly in temporary browser memory (<code>sessionStorage</code>). It is never sent to any server other than directly to <code>api.github.com</code>.</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-token">[CLEAR_TOKEN]</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-save-token">[SAVE_TO_SESSION ↵]</button>
+          </div>
+        </div>
+      </dialog>
 
       <!-- Technical Blueprint Footer -->
       <footer class="app-footer" role="contentinfo">
@@ -81,8 +186,8 @@
             </span>
           </div>
           <div class="footer-right">
-            <span class="footer-tag">[NO_AUTH_REQUIRED]</span>
-            <span class="footer-tag">[AIRGAPPED_DOM]</span>
+            <span class="footer-tag">[KEYBINDS: / SEARCH • 1-5 TABS • ESC RESET]</span>
+            <span class="footer-tag">[LOCAL_CACHE: 30M_TTL]</span>
             <span class="footer-tag">[UNIX_EPOCH_SYNC]</span>
           </div>
         </div>

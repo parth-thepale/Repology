@@ -1,11 +1,14 @@
 /**
- * GitHub REST API client with bounded in-memory cache, in-flight request deduplication,
- * rate limit inspection, and error classification.
+ * GitHub REST API client with local persistent cache (30m TTL), in-flight request deduplication,
+ * real-time rate limit tracking with countdown formatting, and optional ephemeral PAT token support.
  */
 
 const BASE_URL = 'https://api.github.com';
 const API_VERSION = '2022-11-28';
-const CACHE_MAX_ENTRIES = 30;
+const CACHE_MAX_ENTRIES = 40;
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const STORAGE_CACHE_PREFIX = 'repology_cache_v1_';
+const TOKEN_STORAGE_KEY = 'repology_ephemeral_pat';
 
 /**
  * @typedef {'not-found' | 'rate-limit' | 'network' | 'forbidden' | 'invalid-response' | 'unknown'} ApiErrorKind
@@ -27,28 +30,88 @@ export const sessionRateLimit = {
   limit: null,
   resetEpoch: null,
   isLimited: false,
+  hasCustomToken: false,
 };
 
 /**
- * FIFO in-memory cache: Map<url, { data, timestamp }>
+ * In-memory fallback FIFO cache
  */
 const responseCache = new Map();
 
 /**
- * Map of in-flight promises to deduplicate simultaneous requests: Map<url, Promise<any>>
+ * In-flight promise map to deduplicate simultaneous requests
  */
 const inFlightRequests = new Map();
 
 /**
- * Clear the in-memory cache (useful for tests or manual reload).
+ * Retrieve ephemeral token from sessionStorage if provided by user.
+ * Held strictly in browser memory.
+ * @returns {string | null}
+ */
+export function getEphemeralToken() {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const token = window.sessionStorage.getItem(TOKEN_STORAGE_KEY);
+      sessionRateLimit.hasCustomToken = Boolean(token);
+      return token;
+    }
+  } catch {
+    // Storage inaccessible
+  }
+  return null;
+}
+
+/**
+ * Save user-entered ephemeral token into sessionStorage.
+ * @param {string} token
+ */
+export function setEphemeralToken(token) {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      if (token && token.trim()) {
+        window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token.trim());
+        sessionRateLimit.hasCustomToken = true;
+      } else {
+        window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        sessionRateLimit.hasCustomToken = false;
+      }
+    }
+  } catch {
+    // Storage inaccessible
+  }
+}
+
+/**
+ * Clear the ephemeral token.
+ */
+export function clearEphemeralToken() {
+  setEphemeralToken('');
+}
+
+/**
+ * Clear the in-memory and localStorage caches.
  */
 export function clearApiCache() {
   responseCache.clear();
   inFlightRequests.clear();
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const keysToRemove = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k && k.startsWith(STORAGE_CACHE_PREFIX)) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+    }
+  } catch {
+    // LocalStorage error
+  }
 }
 
 /**
- * Format unix timestamp in seconds to a human-readable local time.
+ * Format unix timestamp in seconds to a human-readable local time (e.g. 23:45).
  * @param {number} epochSeconds
  * @returns {string}
  */
@@ -63,6 +126,22 @@ export function formatResetTime(epochSeconds) {
 }
 
 /**
+ * Formats a live remaining countdown (e.g. "14m 22s" or "45s").
+ * @param {number | null} epochSeconds
+ * @returns {string}
+ */
+export function formatResetCountdown(epochSeconds) {
+  if (!epochSeconds) return '60/HR';
+  const now = Math.floor(Date.now() / 1000);
+  const diff = epochSeconds - now;
+  if (diff <= 0) return 'READY';
+  if (diff < 60) return `${diff}s`;
+  const mins = Math.floor(diff / 60);
+  const secs = diff % 60;
+  return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+}
+
+/**
  * Inspect response headers and update session rate limit state.
  * @param {Headers} headers
  */
@@ -74,9 +153,7 @@ export function recordRateLimitHeaders(headers) {
 
   if (remaining !== null) {
     sessionRateLimit.remaining = parseInt(remaining, 10);
-    if (sessionRateLimit.remaining === 0) {
-      sessionRateLimit.isLimited = true;
-    }
+    sessionRateLimit.isLimited = sessionRateLimit.remaining === 0;
   }
   if (limit !== null) {
     sessionRateLimit.limit = parseInt(limit, 10);
@@ -112,7 +189,6 @@ export function normalizeApiError(errorOrResponse, contextMessage = '') {
     }
 
     if (status === 403 || status === 429) {
-      const isRateLimit = remaining === '0' || errorOrResponse.headers.has('retry-after');
       return {
         kind: 'rate-limit',
         status,
@@ -135,7 +211,6 @@ export function normalizeApiError(errorOrResponse, contextMessage = '') {
     };
   }
 
-  // Network / TypeError (offline, CORS failure, aborted)
   if (errorOrResponse instanceof Error) {
     if (errorOrResponse.name === 'AbortError') {
       return {
@@ -169,13 +244,52 @@ export function normalizeApiError(errorOrResponse, contextMessage = '') {
 }
 
 /**
- * Low-level GitHub fetcher with caching, deduplication, and rate-limit tracking.
+ * Retrieve cached item from localStorage if valid.
+ * @param {string} key
+ * @returns {any | null}
+ */
+function getFromPersistentCache(key) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = window.localStorage.getItem(STORAGE_CACHE_PREFIX + key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+        return parsed.data;
+      }
+      window.localStorage.removeItem(STORAGE_CACHE_PREFIX + key);
+    }
+  } catch {
+    // LocalStorage quota or parse error
+  }
+  return null;
+}
+
+/**
+ * Save item to persistent localStorage cache.
+ * @param {string} key
+ * @param {any} data
+ */
+function saveToPersistentCache(key, data) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(
+        STORAGE_CACHE_PREFIX + key,
+        JSON.stringify({ data, timestamp: Date.now() })
+      );
+    }
+  } catch {
+    // Storage quota reached; non-critical
+  }
+}
+
+/**
+ * Low-level GitHub fetcher with persistent local cache, deduplication, and rate-limit tracking.
  * @param {string} endpoint - Relative path (e.g. '/repos/owner/repo')
  * @param {RequestInit & { bypassCache?: boolean, asRawText?: boolean }} [options]
- * @returns {Promise<{ ok: true, data: any, headers: Headers } | { ok: false, error: ApiError }>}
+ * @returns {Promise<{ ok: true, data: any, headers?: Headers, isCacheHit?: boolean } | { ok: false, error: ApiError }>}
  */
 export async function githubFetch(endpoint, options = {}) {
-  // Ensure endpoint is relative and safe
   if (!endpoint.startsWith('/')) {
     endpoint = `/${endpoint}`;
   }
@@ -183,13 +297,20 @@ export async function githubFetch(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
   const cacheKey = `${url}:${options.asRawText ? 'text' : 'json'}`;
 
-  // 1. Check in-memory cache (unless explicitly bypassed)
-  if (!options.bypassCache && responseCache.has(cacheKey)) {
-    const cached = responseCache.get(cacheKey);
-    return { ok: true, data: cached.data, headers: cached.headers };
+  // 1. Check in-memory & persistent localStorage cache
+  if (!options.bypassCache) {
+    if (responseCache.has(cacheKey)) {
+      const cached = responseCache.get(cacheKey);
+      return { ok: true, data: cached.data, headers: cached.headers, isCacheHit: true };
+    }
+    const persisted = getFromPersistentCache(cacheKey);
+    if (persisted !== null) {
+      responseCache.set(cacheKey, { data: persisted, headers: new Headers() });
+      return { ok: true, data: persisted, isCacheHit: true };
+    }
   }
 
-  // 2. Deduplicate in-flight requests to the exact same endpoint
+  // 2. Deduplicate in-flight requests to identical endpoint
   if (inFlightRequests.has(cacheKey)) {
     return inFlightRequests.get(cacheKey);
   }
@@ -199,6 +320,12 @@ export async function githubFetch(endpoint, options = {}) {
       const headers = new Headers(options.headers || {});
       headers.set('Accept', options.asRawText ? 'application/vnd.github.raw' : 'application/vnd.github+json');
       headers.set('X-GitHub-Api-Version', API_VERSION);
+
+      // Check for user-provided ephemeral PAT token
+      const token = getEphemeralToken();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
 
       const response = await fetch(url, {
         ...options,
@@ -214,14 +341,19 @@ export async function githubFetch(endpoint, options = {}) {
 
       const data = options.asRawText ? await response.text() : await response.json();
 
-      // Store in FIFO cache
+      // Store in memory FIFO cache
       if (responseCache.size >= CACHE_MAX_ENTRIES) {
         const oldestKey = responseCache.keys().next().value;
         responseCache.delete(oldestKey);
       }
       responseCache.set(cacheKey, { data, headers: response.headers });
 
-      return { ok: true, data, headers: response.headers };
+      // Save to persistent cache (only for JSON API payloads, not huge raw texts)
+      if (!options.asRawText) {
+        saveToPersistentCache(cacheKey, data);
+      }
+
+      return { ok: true, data, headers: response.headers, isCacheHit: false };
     } catch (err) {
       const error = normalizeApiError(err);
       return { ok: false, error };

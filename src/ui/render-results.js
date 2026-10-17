@@ -1,14 +1,47 @@
 /**
  * INDUSTRIAL MODERNIST RESULTS CONTROL CONSOLE
- * Flight deck telemetry, monospace metrics strip, hardware switchboard tabs, and inspectable modules.
+ * Flight deck telemetry, language composition bar, maintenance pulse,
+ * report exports ([COPY_MARKDOWN], [EXPORT_JSON]), and hardware switchboard tabs.
  */
 
 import { formatCompactNumber, formatNullable, formatDate } from '../core/formatters.js';
+import { generateMarkdownReport, generateJsonReport } from '../services/repository-service.js';
 import { renderFiles } from './render-files.js';
 import { renderReadme } from './render-readme.js';
 import { renderSetup } from './render-setup.js';
 import { renderContribute } from './render-contribute.js';
 import { renderPartialAlert } from './render-states.js';
+
+/**
+ * Calculates language percentage shares.
+ * @param {Record<string, number>} languages
+ * @returns {{ name: string, percent: number, color: string }[]}
+ */
+function getLanguageShares(languages = {}) {
+  const entries = Object.entries(languages);
+  const total = entries.reduce((acc, [, val]) => acc + val, 0);
+  if (total === 0) return [];
+
+  const langColors = {
+    TypeScript: '#3178C6',
+    JavaScript: '#F7DF1E',
+    Python: '#3572A5',
+    Go: '#00ADD8',
+    Rust: '#DEA584',
+    HTML: '#E34C26',
+    CSS: '#563D7C',
+    C: '#555555',
+    'C++': '#F34B7D',
+    Ruby: '#701516',
+    Java: '#B07219',
+  };
+
+  return entries.slice(0, 5).map(([name, bytes]) => ({
+    name,
+    percent: Math.round((bytes / total) * 100),
+    color: langColors[name] || '#888888',
+  }));
+}
 
 /**
  * @param {HTMLElement} container
@@ -30,7 +63,11 @@ export function renderResults(container, { data, onChangeRepo }) {
     readmeError,
     detection,
     setupGuides,
+    languages = {},
+    pulse,
     isPartial,
+    isCacheHit,
+    isDemo,
   } = data;
 
   const resultsConsole = document.createElement('div');
@@ -61,6 +98,8 @@ export function renderResults(container, { data, onChangeRepo }) {
   breadcrumbs.className = 'coords-breadcrumbs';
   breadcrumbs.innerHTML = `
     <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>ACTIVE</span>
+    ${isCacheHit ? '<span class="badge-tag badge-tag-info">[CACHE_HIT // 0_API_COST]</span>' : ''}
+    ${isDemo ? '<span class="badge-tag badge-tag-warning">[DEMO_SNAPSHOT // 0_API_COST]</span>' : ''}
     <span class="coords-owner">${metadata.owner?.login || owner}</span>
     <span class="coords-sep">/</span>
     <h2 class="coords-repo">${metadata.name || repo}</h2>
@@ -78,8 +117,64 @@ export function renderResults(container, { data, onChangeRepo }) {
 
   deckTop.appendChild(coordsGroup);
 
+  // Deck Action Buttons & Export Triggers
   const actionsGroup = document.createElement('div');
   actionsGroup.className = 'deck-actions';
+
+  // Copy Markdown Report Button
+  const copyMdBtn = document.createElement('button');
+  copyMdBtn.type = 'button';
+  copyMdBtn.className = 'btn btn-secondary btn-sm';
+  copyMdBtn.textContent = '[COPY_MD_REPORT]';
+  copyMdBtn.title = 'Copy executive markdown summary for PRs or documentation';
+  copyMdBtn.addEventListener('click', async () => {
+    try {
+      const md = generateMarkdownReport(data);
+      await navigator.clipboard.writeText(md);
+      copyMdBtn.textContent = '[REPORT_COPIED ✓]';
+      setTimeout(() => {
+        copyMdBtn.textContent = '[COPY_MD_REPORT]';
+      }, 2000);
+    } catch {
+      copyMdBtn.textContent = '[COPY_FAILED]';
+    }
+  });
+
+  // Export JSON Button
+  const exportJsonBtn = document.createElement('button');
+  exportJsonBtn.type = 'button';
+  exportJsonBtn.className = 'btn btn-secondary btn-sm';
+  exportJsonBtn.textContent = '[EXPORT_JSON]';
+  exportJsonBtn.title = 'Download structured JSON telemetry file';
+  exportJsonBtn.addEventListener('click', () => {
+    const jsonStr = generateJsonReport(data);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `repology-${owner}-${repo}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Share link trigger
+  const shareBtn = document.createElement('button');
+  shareBtn.type = 'button';
+  shareBtn.className = 'btn btn-secondary btn-sm';
+  shareBtn.textContent = '[SHARE_URL]';
+  shareBtn.title = 'Copy direct shareable URL';
+  shareBtn.addEventListener('click', async () => {
+    try {
+      const shareUrl = `${window.location.origin}/?target=${owner}/${repo}`;
+      await navigator.clipboard.writeText(shareUrl);
+      shareBtn.textContent = '[URL_COPIED ✓]';
+      setTimeout(() => {
+        shareBtn.textContent = '[SHARE_URL]';
+      }, 2000);
+    } catch {
+      shareBtn.textContent = '[COPY_FAILED]';
+    }
+  });
 
   const changeBtn = document.createElement('button');
   changeBtn.type = 'button';
@@ -94,6 +189,9 @@ export function renderResults(container, { data, onChangeRepo }) {
   ghLink.rel = 'noopener noreferrer';
   ghLink.textContent = 'GH_SOURCE ↗';
 
+  actionsGroup.appendChild(shareBtn);
+  actionsGroup.appendChild(copyMdBtn);
+  actionsGroup.appendChild(exportJsonBtn);
   actionsGroup.appendChild(changeBtn);
   actionsGroup.appendChild(ghLink);
   deckTop.appendChild(actionsGroup);
@@ -117,6 +215,7 @@ export function renderResults(container, { data, onChangeRepo }) {
     <div class="tele-node"><span class="tele-key">ISSUES:</span><span class="tele-val">${issues}</span></div>
     <div class="tele-node"><span class="tele-key">BRANCH:</span><span class="tele-val"><code>${defaultBranch}</code></span></div>
     <div class="tele-node"><span class="tele-key">LICENSE:</span><span class="tele-val">${formatNullable(licenseName)}</span></div>
+    <div class="tele-node"><span class="tele-key">CADENCE:</span><span class="tele-val" style="color: ${pulse?.color || '#10B981'};">${pulse?.label?.split(' ')[0] || 'ACTIVE'}</span></div>
     <div class="tele-node"><span class="tele-key">LAST_PUSH:</span><span class="tele-val">${lastUpdated}</span></div>
   `;
   flightDeck.appendChild(teleStrip);
@@ -169,34 +268,58 @@ export function renderResults(container, { data, onChangeRepo }) {
   const panelsContainer = document.createElement('div');
   panelsContainer.className = 'panels-container';
 
-  // --- Panel 1: Overview Matrix ---
+  // --- Panel 1: Overview Matrix with Velocity & Composition Bento ---
   const overviewPanel = document.createElement('div');
   overviewPanel.id = 'panel-overview';
   overviewPanel.role = 'tabpanel';
   overviewPanel.setAttribute('aria-labelledby', 'tab-overview');
   overviewPanel.style.display = 'block';
 
-  // Panel Header Bar
   const ovHeader = document.createElement('div');
   ovHeader.className = 'panel-header-bar';
   ovHeader.innerHTML = `
     <div class="panel-header-left">
       <span class="panel-id-label">MODULE // 01_OVERVIEW_MATRIX</span>
+      <span class="badge-tag" style="color: ${pulse?.color || '#10B981'};">[CADENCE: ${pulse?.label || 'ACTIVE'}]</span>
     </div>
     <div class="panel-header-right">
-      <span class="badge-tag">[TELEMETRY_SYNCED]</span>
+      <span class="badge-tag">[KEYBINDS_ACTIVE: 1-5]</span>
     </div>
   `;
   overviewPanel.appendChild(ovHeader);
 
-  // Hairline Split Grid
+  // Bento Split Grid
   const overviewGrid = document.createElement('div');
   overviewGrid.className = 'overview-matrix-grid';
 
-  // Left Cell: Structured Facts
+  // Left Cell: Structured Facts & Velocity Pulse
   const factsBlock = document.createElement('div');
   factsBlock.className = 'matrix-block';
+
+  // Language Breakdown Progress Bar
+  const langShares = getLanguageShares(languages);
+  let langBarHtml = '';
+  if (langShares.length > 0) {
+    langBarHtml = `
+      <div style="margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; margin-bottom: 0.35rem; color: var(--text-muted);">
+          <span>COMPOSITION_SPECTRUM:</span>
+          <span>${langShares.map((s) => `${s.name} ${s.percent}%`).join(' • ')}</span>
+        </div>
+        <div style="display: flex; height: 6px; background-color: #111; overflow: hidden; border: 1px solid var(--border-subtle);">
+          ${langShares
+            .map(
+              (s) =>
+                `<div style="width: ${s.percent}%; background-color: ${s.color};" title="${s.name}: ${s.percent}%"></div>`
+            )
+            .join('')}
+        </div>
+      </div>
+    `;
+  }
+
   factsBlock.innerHTML = `
+    ${langBarHtml}
     <table class="telemetry-table">
       <tbody>
         <tr>
@@ -216,12 +339,12 @@ export function renderResults(container, { data, onChangeRepo }) {
           <td class="td-val">${detection.packageManager || (detection.hasConflictingLockfiles ? 'CONFLICTING_LOCKFILES' : 'NONE_DETECTED')}</td>
         </tr>
         <tr>
-          <td class="td-label">DEFAULT_BRANCH:</td>
-          <td class="td-val"><code>${defaultBranch}</code></td>
+          <td class="td-label">MAINTENANCE_CADENCE:</td>
+          <td class="td-val" style="color: ${pulse?.color || '#10B981'};">${pulse?.label || 'ACTIVE'} (Pushed: ${pulse?.relativePush || 'Recent'})</td>
         </tr>
         <tr>
-          <td class="td-label">SPDX_LICENSE:</td>
-          <td class="td-val">${formatNullable(licenseName)}</td>
+          <td class="td-label">LICENSE_COMPLIANCE:</td>
+          <td class="td-val">${pulse?.licenseType || formatNullable(licenseName)}</td>
         </tr>
         <tr>
           <td class="td-label">CI_PIPELINES:</td>
@@ -243,7 +366,7 @@ export function renderResults(container, { data, onChangeRepo }) {
     <div class="inspection-trigger-list">
       <button type="button" class="inspection-trigger-btn" id="shortcut-setup">
         <div class="trigger-left">
-          <span class="trigger-title">03 // SETUP_SIGNALS</span>
+          <span class="trigger-title">03 // SETUP_SIGNALS <span class="keycap">3</span></span>
           <span class="trigger-desc">${setupGuides.length} verified manifest commands & confidence tiers</span>
         </div>
         <span class="trigger-arrow">→</span>
@@ -251,7 +374,7 @@ export function renderResults(container, { data, onChangeRepo }) {
 
       <button type="button" class="inspection-trigger-btn" id="shortcut-files">
         <div class="trigger-left">
-          <span class="trigger-title">02 // ROOT_DIRECTORY_TREE</span>
+          <span class="trigger-title">02 // ROOT_DIRECTORY_TREE <span class="keycap">2</span></span>
           <span class="trigger-desc">${contents.length} top-level entries with on-demand folder expansion</span>
         </div>
         <span class="trigger-arrow">→</span>
@@ -259,7 +382,7 @@ export function renderResults(container, { data, onChangeRepo }) {
 
       <button type="button" class="inspection-trigger-btn" id="shortcut-readme">
         <div class="trigger-left">
-          <span class="trigger-title">04 // README_TERMINAL</span>
+          <span class="trigger-title">04 // README_TERMINAL <span class="keycap">4</span></span>
           <span class="trigger-desc">Sanitized markdown preview with table of contents & raw toggle</span>
         </div>
         <span class="trigger-arrow">→</span>
@@ -267,7 +390,7 @@ export function renderResults(container, { data, onChangeRepo }) {
 
       <button type="button" class="inspection-trigger-btn" id="shortcut-contribute">
         <div class="trigger-left">
-          <span class="trigger-title">05 // CONTRIBUTE_VECTORS</span>
+          <span class="trigger-title">05 // CONTRIBUTE_VECTORS <span class="keycap">5</span></span>
           <span class="trigger-desc">Issues, PRs, and detected contributing guidelines</span>
         </div>
         <span class="trigger-arrow">→</span>

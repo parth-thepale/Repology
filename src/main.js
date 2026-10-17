@@ -1,15 +1,25 @@
 /**
  * Main application wiring and state manager:
- * - URL state synchronization (?repo=owner/repo or #owner/repo)
- * - Live mission-control header telemetry synchronization (quota, reset time)
- * - Keyboard shortcuts (ESC to reset, ⌘K to search)
+ * - URL state synchronization (?target=owner/repo or ?repo=owner/repo)
+ * - Live mission-control rate telemetry engine with live second-by-second countdown
+ * - Ephemeral PAT token dialog integration (60/hr -> 5000/hr)
+ * - Global keyboard shortcuts (1-5 tabs, / or ⌘K search, ESC reset)
+ * - Instant 0ms offline demo mode snapshot
  * - Race-condition guard for in-flight requests (QA-18)
- * - Accessible state transitions (landing -> loading -> results / error)
  */
 
 import { parseRepoUrl } from './core/parse-repo-url.js';
 import { analyzeRepository } from './services/repository-service.js';
-import { sessionRateLimit, formatResetTime, probeInitialRateLimit } from './services/github-api.js';
+import {
+  sessionRateLimit,
+  formatResetTime,
+  formatResetCountdown,
+  probeInitialRateLimit,
+  setEphemeralToken,
+  clearEphemeralToken,
+  getEphemeralToken,
+} from './services/github-api.js';
+import { DEMO_SNAPSHOT } from './services/demo-snapshot.js';
 import { renderLanding } from './ui/render-landing.js';
 import { renderResults } from './ui/render-results.js';
 import { renderLoadingSkeleton, renderErrorState } from './ui/render-states.js';
@@ -20,35 +30,48 @@ let currentRequestId = 0;
 let lastSearchedRepo = '';
 
 /**
- * Updates sticky top-bar rate limit telemetry counters
+ * Updates sticky top-bar rate limit telemetry counters & live countdown
  */
 function updateHeaderTelemetry() {
   const remainingEl = document.getElementById('telemetry-rate-remaining');
   const resetEl = document.getElementById('telemetry-rate-reset');
+  const tokenBadgeEl = document.getElementById('telemetry-token-status');
 
-  if (remainingEl && sessionRateLimit.remaining !== null) {
-    const total = sessionRateLimit.limit || 60;
-    remainingEl.textContent = `${sessionRateLimit.remaining}/${total}`;
-    if (sessionRateLimit.remaining === 0) {
-      remainingEl.style.color = '#EF4444';
+  if (tokenBadgeEl) {
+    const hasToken = Boolean(getEphemeralToken());
+    tokenBadgeEl.textContent = hasToken ? '[TOKEN_5K]' : '[NO_TOKEN]';
+    tokenBadgeEl.style.color = hasToken ? '#10B981' : '';
+  }
+
+  if (remainingEl) {
+    if (sessionRateLimit.remaining !== null) {
+      const total = sessionRateLimit.limit || (sessionRateLimit.hasCustomToken ? 5000 : 60);
+      remainingEl.textContent = `${sessionRateLimit.remaining}/${total}`;
+      remainingEl.style.color = sessionRateLimit.remaining === 0 ? '#EF4444' : '';
     } else {
+      remainingEl.textContent = 'READY';
       remainingEl.style.color = '';
     }
   }
 
-  if (resetEl && sessionRateLimit.resetEpoch !== null) {
-    resetEl.textContent = formatResetTime(sessionRateLimit.resetEpoch);
+  if (resetEl) {
+    if (sessionRateLimit.resetEpoch !== null) {
+      resetEl.textContent = formatResetCountdown(sessionRateLimit.resetEpoch);
+    } else {
+      resetEl.textContent = sessionRateLimit.hasCustomToken ? '5K/HR' : '60/HR';
+    }
   }
 }
 
 /**
  * Read repo query or hash from current location.
+ * Supports both ?target=owner/repo and ?repo=owner/repo
  * @returns {string}
  */
 function getRepoFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const qRepo = params.get('repo');
-  if (qRepo) return qRepo.trim();
+  const target = params.get('target') || params.get('repo');
+  if (target) return target.trim();
 
   const hash = window.location.hash.replace(/^#\/?/, '').trim();
   if (hash) return hash;
@@ -63,10 +86,12 @@ function getRepoFromUrl() {
 function syncUrlWithRepo(repoFullName) {
   const currentUrl = new URL(window.location.href);
   if (repoFullName) {
-    currentUrl.searchParams.set('repo', repoFullName);
+    currentUrl.searchParams.set('target', repoFullName);
+    currentUrl.searchParams.delete('repo');
     currentUrl.hash = '';
-    window.history.pushState({ repo: repoFullName }, '', currentUrl.toString());
+    window.history.pushState({ target: repoFullName }, '', currentUrl.toString());
   } else {
+    currentUrl.searchParams.delete('target');
     currentUrl.searchParams.delete('repo');
     currentUrl.hash = '';
     window.history.pushState({}, '', currentUrl.pathname);
@@ -88,6 +113,24 @@ export function showLanding(initialError = '') {
     onSubmit: (input) => {
       handleExplore(input);
     },
+    onLoadDemo: () => {
+      handleLoadDemo();
+    },
+  });
+}
+
+/**
+ * Loads the 0ms pre-cached offline demo snapshot.
+ */
+export function handleLoadDemo() {
+  currentRequestId++;
+  lastSearchedRepo = `${DEMO_SNAPSHOT.owner}/${DEMO_SNAPSHOT.repo}`;
+  syncUrlWithRepo(lastSearchedRepo);
+  document.title = `${lastSearchedRepo.toUpperCase()} // DEMO_TELEMETRY`;
+
+  renderResults(appContainer, {
+    data: DEMO_SNAPSHOT,
+    onChangeRepo: () => showLanding(),
   });
 }
 
@@ -151,6 +194,48 @@ export async function handleExplore(rawInput) {
 }
 
 /**
+ * Setup PAT Token Dialog Interactions
+ */
+function setupTokenDialog() {
+  const dialog = document.getElementById('token-dialog');
+  const triggerBtn = document.getElementById('header-rate-telemetry');
+  const closeBtn = document.getElementById('btn-close-dialog');
+  const saveBtn = document.getElementById('btn-save-token');
+  const clearBtn = document.getElementById('btn-clear-token');
+  const tokenInput = document.getElementById('input-pat-token');
+
+  if (!dialog || !triggerBtn) return;
+
+  triggerBtn.addEventListener('click', () => {
+    if (tokenInput) {
+      tokenInput.value = getEphemeralToken() || '';
+    }
+    dialog.showModal();
+  });
+
+  closeBtn?.addEventListener('click', () => {
+    dialog.close();
+  });
+
+  saveBtn?.addEventListener('click', async () => {
+    if (tokenInput) {
+      setEphemeralToken(tokenInput.value);
+      dialog.close();
+      await probeInitialRateLimit();
+      updateHeaderTelemetry();
+    }
+  });
+
+  clearBtn?.addEventListener('click', async () => {
+    clearEphemeralToken();
+    if (tokenInput) tokenInput.value = '';
+    dialog.close();
+    await probeInitialRateLimit();
+    updateHeaderTelemetry();
+  });
+}
+
+/**
  * Initialize app on page load
  */
 function init() {
@@ -163,11 +248,28 @@ function init() {
     });
   }
 
-  // Keyboard shortcut listeners (ESC to return home, ⌘K to search)
+  // Setup Ephemeral Token Dialog
+  setupTokenDialog();
+
+  // Global Keyboard shortcuts:
+  // - '/' or 'Cmd+K' to focus search
+  // - 'ESC' to return home / close dialog
+  // - '1'-'5' to switch tabs in results
   window.addEventListener('keydown', (e) => {
+    const dialog = document.getElementById('token-dialog');
+    const isModalOpen = dialog && dialog.open;
+
     if (e.key === 'Escape') {
-      showLanding();
-    } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if (isModalOpen) {
+        dialog.close();
+      } else {
+        showLanding();
+      }
+    } else if (
+      (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) &&
+      !isModalOpen &&
+      document.activeElement?.tagName !== 'INPUT'
+    ) {
       e.preventDefault();
       const input = document.getElementById('repo-url-input');
       if (input) {
@@ -175,6 +277,23 @@ function init() {
         input.select();
       } else {
         showLanding();
+      }
+    } else if (
+      ['1', '2', '3', '4', '5'].includes(e.key) &&
+      !isModalOpen &&
+      document.activeElement?.tagName !== 'INPUT' &&
+      document.activeElement?.tagName !== 'TEXTAREA'
+    ) {
+      const tabMap = {
+        '1': 'tab-overview',
+        '2': 'tab-files',
+        '3': 'tab-setup',
+        '4': 'tab-readme',
+        '5': 'tab-contribute',
+      };
+      const tabBtn = document.getElementById(tabMap[e.key]);
+      if (tabBtn) {
+        tabBtn.click();
       }
     }
   });
@@ -189,7 +308,10 @@ function init() {
     }
   });
 
-  // Proactively probe GitHub rate limit quota on boot without blocking initial view
+  // Second-by-second live countdown telemetry ticker
+  setInterval(updateHeaderTelemetry, 1000);
+
+  // Proactively probe GitHub rate limit quota on boot
   probeInitialRateLimit()
     .then(() => updateHeaderTelemetry())
     .catch(() => {});

@@ -2,6 +2,7 @@
  * INDUSTRIAL MODERNIST LANDING CONSOLE
  * High-density blueprint with clear human value proposition:
  * "Every repository has a story. Understand it before you open the code."
+ * Supports one-click iconic presets and instant 0ms offline demo mode.
  */
 
 import { APP_CONFIG } from '../core/config.js';
@@ -10,10 +11,11 @@ import { APP_CONFIG } from '../core/config.js';
  * @param {HTMLElement} container
  * @param {Object} options
  * @param {(url: string) => void} options.onSubmit
+ * @param {() => void} [options.onLoadDemo]
  * @param {string} [options.initialValue='']
  * @param {string} [options.initialError='']
  */
-export function renderLanding(container, { onSubmit, initialValue = '', initialError = '' }) {
+export function renderLanding(container, { onSubmit, onLoadDemo, initialValue = '', initialError = '' }) {
   container.innerHTML = '';
 
   const consoleWrapper = document.createElement('div');
@@ -38,6 +40,7 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
     <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>ACTIVE_RECON</span>
     <span class="badge-tag">[NO_AUTH_REQUIRED]</span>
     <span class="badge-tag">[READ_ONLY_REST]</span>
+    <span class="badge-tag">[HOTKEY: / FOCUS_PROMPT]</span>
   `;
   heroBlock.appendChild(metaRow);
 
@@ -102,6 +105,16 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
   inputGroup.appendChild(prefixBox);
   inputGroup.appendChild(submitBtn);
 
+  if (onLoadDemo) {
+    const demoBtn = document.createElement('button');
+    demoBtn.type = 'button';
+    demoBtn.className = 'btn btn-secondary';
+    demoBtn.title = 'Load pre-cached telemetry snapshot immediately with 0 API cost';
+    demoBtn.innerHTML = '[LOAD_DEMO // 0ms]';
+    demoBtn.addEventListener('click', onLoadDemo);
+    inputGroup.appendChild(demoBtn);
+  }
+
   const errorEl = document.createElement('div');
   errorEl.className = 'radar-error';
   errorEl.setAttribute('aria-live', 'polite');
@@ -121,27 +134,28 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
   form.appendChild(helperNote);
   radarPanel.appendChild(form);
 
-  // Preset quick buttons
+  // Quick-Select Iconic Target Presets
   const presetsRow = document.createElement('div');
   presetsRow.className = 'presets-row';
 
   const presetLabel = document.createElement('span');
   presetLabel.className = 'presets-label';
-  presetLabel.textContent = 'EXPLORE_POPULAR_REPOS:';
+  presetLabel.textContent = 'ICONIC_TARGET_PRESETS:';
   presetsRow.appendChild(presetLabel);
 
   const presets = [
-    { idx: '01', repo: 'vitejs/vite' },
-    { idx: '02', repo: 'expressjs/express' },
-    { idx: '03', repo: 'fastapi/fastapi' },
-    { idx: '04', repo: 'golang/go' },
+    { label: '[LOAD: vitejs/vite]', repo: 'vitejs/vite' },
+    { label: '[LOAD: vercel/next.js]', repo: 'vercel/next.js' },
+    { label: '[LOAD: facebook/react]', repo: 'facebook/react' },
+    { label: '[LOAD: torvalds/linux]', repo: 'torvalds/linux' },
+    { label: '[LOAD: fastapi/fastapi]', repo: 'fastapi/fastapi' },
   ];
 
   presets.forEach((p) => {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'preset-chip';
-    chip.innerHTML = `<span class="chip-idx">[${p.idx}]</span> ${p.repo}`;
+    chip.textContent = p.label;
     chip.addEventListener('click', () => {
       input.value = p.repo;
       errorEl.textContent = '';
