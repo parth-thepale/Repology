@@ -1,7 +1,10 @@
 /**
  * INDUSTRIAL MODERNIST LANDING CONSOLE
- * High-density blueprint with prompt input, keycap triggers, corner brackets, and exposed hairline bento grid.
+ * High-density blueprint with clear human value proposition:
+ * "Every repository has a story. Understand it before you open the code."
  */
+
+import { APP_CONFIG } from '../core/config.js';
 
 /**
  * @param {HTMLElement} container
@@ -33,26 +36,25 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
   metaRow.className = 'hero-header-meta';
   metaRow.innerHTML = `
     <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>ACTIVE_RECON</span>
-    <span class="badge-tag">[UNAUTHENTICATED_REST]</span>
-    <span class="badge-tag">[READ_ONLY]</span>
+    <span class="badge-tag">[NO_AUTH_REQUIRED]</span>
+    <span class="badge-tag">[READ_ONLY_REST]</span>
   `;
   heroBlock.appendChild(metaRow);
 
   const headline = document.createElement('h1');
   headline.className = 'hero-headline';
-  headline.textContent = 'Orient in any public repository. Deterministic facts, zero hallucination.';
+  headline.textContent = APP_CONFIG.tagline;
   heroBlock.appendChild(headline);
 
   const subline = document.createElement('p');
   subline.className = 'hero-subline';
-  subline.textContent = 'Direct GitHub REST telemetry. Inspect root architecture, detect real manifest signals, view sanitized README markdown, and locate verified contribution entry points without code execution.';
+  subline.textContent = APP_CONFIG.description;
   heroBlock.appendChild(subline);
 
   // Radar Input Panel with Corner Brackets
   const radarPanel = document.createElement('div');
   radarPanel.className = 'radar-input-panel';
 
-  // Corner Ticks (Blueprint CAD look)
   radarPanel.innerHTML = `
     <span class="corner-tick corner-tl" aria-hidden="true"></span>
     <span class="corner-tick corner-tr" aria-hidden="true"></span>
@@ -78,11 +80,11 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
   input.name = 'repoUrl';
   input.type = 'text';
   input.className = 'radar-input';
-  input.placeholder = 'owner/repo (e.g. vitejs/vite)';
+  input.placeholder = 'owner/repo (e.g. vitejs/vite or full URL)';
   input.value = initialValue;
   input.autocomplete = 'off';
   input.spellcheck = false;
-  input.setAttribute('aria-label', 'GitHub Repository identifier');
+  input.setAttribute('aria-label', 'GitHub Repository URL or owner/repo shorthand');
 
   const keycapHint = document.createElement('span');
   keycapHint.className = 'input-keycap-hint';
@@ -95,7 +97,7 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
   const submitBtn = document.createElement('button');
   submitBtn.type = 'submit';
   submitBtn.className = 'btn btn-primary';
-  submitBtn.innerHTML = 'ANALYZE_REPO <span class="btn-arrow" aria-hidden="true">→</span>';
+  submitBtn.innerHTML = 'EXPLORE_REPO <span class="btn-arrow" aria-hidden="true">→</span>';
 
   inputGroup.appendChild(prefixBox);
   inputGroup.appendChild(submitBtn);
@@ -107,17 +109,25 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
     errorEl.textContent = `[ERR] ${initialError}`;
   }
 
+  const helperNote = document.createElement('div');
+  helperNote.style.fontFamily = 'var(--font-mono)';
+  helperNote.style.fontSize = '11px';
+  helperNote.style.color = 'var(--text-muted)';
+  helperNote.style.marginTop = '0.35rem';
+  helperNote.innerHTML = 'Supports <code>owner/repo</code>, canonical URL, and <code>.git</code> • Public repositories only • Zero code execution';
+
   form.appendChild(inputGroup);
   form.appendChild(errorEl);
+  form.appendChild(helperNote);
   radarPanel.appendChild(form);
 
-  // Preset selector
+  // Preset quick buttons
   const presetsRow = document.createElement('div');
   presetsRow.className = 'presets-row';
 
   const presetLabel = document.createElement('span');
   presetLabel.className = 'presets-label';
-  presetLabel.textContent = 'PRESET_REPOSITORIES:';
+  presetLabel.textContent = 'EXPLORE_POPULAR_REPOS:';
   presetsRow.appendChild(presetLabel);
 
   const presets = [
@@ -144,30 +154,30 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
   heroBlock.appendChild(radarPanel);
   consoleWrapper.appendChild(heroBlock);
 
-  // Hairline Bento Grid (Exposed Structural Honesty)
+  // Hairline Bento Grid - High-clarity value propositions
   const bentoGrid = document.createElement('section');
   bentoGrid.className = 'hairline-grid-4';
 
   const specs = [
     {
-      idx: '01 // TELEMETRY',
-      title: 'Fact Extractor',
-      desc: 'Pulls raw repository metrics: stars, forks, default branch, licenses, and primary GitHub language without intermediate hallucination.',
+      idx: '01 // TECH_STACK',
+      title: 'Language & Manifest Detection',
+      desc: 'Discovers package managers and build tools from root files (npm, cargo, pip, go) rather than guessing from descriptions.',
     },
     {
-      idx: '02 // INTEGRITY',
-      title: 'Evidence Verifier',
-      desc: 'Parses package.json scripts and lockfiles. Distinguishes verified detected commands from conventional suggestions and warns on conflicting lockfiles.',
+      idx: '02 // ROOT_TREE',
+      title: 'Navigable File Architecture',
+      desc: 'Instant visual map of repository layout. Expand folders on demand with direct links to GitHub source lines.',
     },
     {
-      idx: '03 // MATRIX',
-      title: 'Root Explorer',
-      desc: 'Direct file and directory mapping with on-demand child folder expansion and safe links to GitHub source tree lines.',
+      idx: '03 // SETUP_SIGNALS',
+      title: 'Honest Setup & Run Commands',
+      desc: 'Reads actual package.json scripts and lockfiles. Clearly labels commands as Detected, Suggested, or Not verified.',
     },
     {
-      idx: '04 // AIRGAP',
-      title: 'Zero Execution',
-      desc: 'Untrusted README markdown is strictly sanitized via DOMPurify. Zero script execution, zero OAuth access tokens stored.',
+      idx: '04 // ENTRY_POINTS',
+      title: 'Contribution Opportunities',
+      desc: 'Jump directly to open issues, beginner-friendly "good first issue" tags, pull requests, and contributing rules.',
     },
   ];
 
@@ -187,7 +197,7 @@ export function renderLanding(container, { onSubmit, initialValue = '', initialE
 
   consoleWrapper.appendChild(bentoGrid);
 
-  // Form submit event
+  // Form submit handler
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const val = input.value.trim();

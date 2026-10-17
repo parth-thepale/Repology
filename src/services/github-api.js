@@ -233,3 +233,30 @@ export async function githubFetch(endpoint, options = {}) {
   inFlightRequests.set(cacheKey, fetchPromise);
   return fetchPromise;
 }
+
+/**
+ * Proactively inspects the unauthenticated rate limit quota from GitHub.
+ * This endpoint (/rate_limit) does not consume or decrement your rate limit budget.
+ * @returns {Promise<{ ok: boolean, remaining?: number, limit?: number, resetEpoch?: number }>}
+ */
+export async function probeInitialRateLimit() {
+  try {
+    const res = await githubFetch('/rate_limit', { bypassCache: true });
+    if (res.ok && res.data && res.data.resources?.core) {
+      const core = res.data.resources.core;
+      sessionRateLimit.remaining = core.remaining;
+      sessionRateLimit.limit = core.limit;
+      sessionRateLimit.resetEpoch = core.reset;
+      sessionRateLimit.isLimited = core.remaining === 0;
+      return {
+        ok: true,
+        remaining: core.remaining,
+        limit: core.limit,
+        resetEpoch: core.reset,
+      };
+    }
+    return { ok: false };
+  } catch {
+    return { ok: false };
+  }
+}

@@ -9,7 +9,7 @@
 
 import { parseRepoUrl } from './core/parse-repo-url.js';
 import { analyzeRepository } from './services/repository-service.js';
-import { sessionRateLimit, formatResetTime } from './services/github-api.js';
+import { sessionRateLimit, formatResetTime, probeInitialRateLimit } from './services/github-api.js';
 import { renderLanding } from './ui/render-landing.js';
 import { renderResults } from './ui/render-results.js';
 import { renderLoadingSkeleton, renderErrorState } from './ui/render-states.js';
@@ -29,6 +29,11 @@ function updateHeaderTelemetry() {
   if (remainingEl && sessionRateLimit.remaining !== null) {
     const total = sessionRateLimit.limit || 60;
     remainingEl.textContent = `${sessionRateLimit.remaining}/${total}`;
+    if (sessionRateLimit.remaining === 0) {
+      remainingEl.style.color = '#EF4444';
+    } else {
+      remainingEl.style.color = '';
+    }
   }
 
   if (resetEl && sessionRateLimit.resetEpoch !== null) {
@@ -183,6 +188,11 @@ function init() {
       showLanding();
     }
   });
+
+  // Proactively probe GitHub rate limit quota on boot without blocking initial view
+  probeInitialRateLimit()
+    .then(() => updateHeaderTelemetry())
+    .catch(() => {});
 
   // Check for initial repository in URL
   const initialRepo = getRepoFromUrl();
