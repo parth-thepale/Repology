@@ -1,11 +1,7 @@
 /**
- * Setup guidance panel:
- * - Renders evidence-backed setup cards with explicit confidence tiers:
- *   - "Detected"
- *   - "Suggested"
- *   - "Not verified"
- * - One-click clipboard copy with visible feedback
- * - Clear caveats and warnings for conflicting lockfiles
+ * INDUSTRIAL MODERNIST SETUP & BUILD SIGNALS
+ * Strict evidence tiers ([DETECTED], [SUGGESTED], [NOT_VERIFIED]),
+ * terminal command bars with gutter numbers, and one-click copy triggers.
  */
 
 /**
@@ -19,133 +15,127 @@ export function renderSetup(container, { guides = [], owner, repo }) {
   container.innerHTML = '';
 
   const panel = document.createElement('div');
-  panel.className = 'panel-card setup-panel-card';
+  panel.className = 'setup-module-panel';
 
-  // Panel header
+  // Panel Header Bar
   const header = document.createElement('div');
-  header.className = 'panel-header';
-
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'panel-title-group';
-
-  const title = document.createElement('h3');
-  title.className = 'section-title';
-  title.textContent = 'Setup & Build Signals';
-
-  const badge = document.createElement('span');
-  badge.className = 'pill pill-neutral';
-  badge.textContent = `${guides.length} signal${guides.length === 1 ? '' : 's'}`;
-
-  titleGroup.appendChild(title);
-  titleGroup.appendChild(badge);
-  header.appendChild(titleGroup);
+  header.className = 'panel-header-bar';
+  header.innerHTML = `
+    <div class="panel-header-left">
+      <span class="panel-id-label">MODULE // 03_SETUP_SIGNALS</span>
+      <span class="badge-tag">[SIGNALS: ${guides.length}]</span>
+    </div>
+    <div class="panel-header-right">
+      <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>DETERMINISTIC</span>
+    </div>
+  `;
   panel.appendChild(header);
 
-  // Trust & safety callout
-  const banner = document.createElement('div');
-  banner.className = 'setup-safety-banner';
-  banner.innerHTML = `
-    <span class="safety-banner-icon" aria-hidden="true">🛡️</span>
-    <span class="safety-banner-text">
-      <strong>Source-backed evidence:</strong> Commands are derived strictly from inspected root manifests and scripts.
-      Repology never executes, builds, or installs repository code.
-    </span>
+  // Safety Callout Strip
+  const safetyStrip = document.createElement('div');
+  safetyStrip.className = 'safety-strip';
+  safetyStrip.innerHTML = `
+    <span class="badge-tag badge-tag-nominal">[POLICY]</span>
+    <span>Commands derived strictly from root manifests and lockfiles. Repology never executes, installs, or builds code.</span>
   `;
-  panel.appendChild(banner);
+  panel.appendChild(safetyStrip);
 
-  // Cards container
-  const cardsWrapper = document.createElement('div');
-  cardsWrapper.className = 'setup-cards-grid';
+  // Cards Stack
+  const stack = document.createElement('div');
+  stack.className = 'setup-cards-stack';
 
   guides.forEach((guide) => {
-    const card = document.createElement('div');
-    card.className = `setup-guide-card ${guide.isWarning ? 'setup-guide-card-warning' : ''}`;
+    const block = document.createElement('div');
+    block.className = 'setup-block';
 
-    const cardHeader = document.createElement('div');
-    cardHeader.className = 'setup-card-header';
+    const blockHeader = document.createElement('div');
+    blockHeader.className = 'setup-block-header';
 
-    const cardTitle = document.createElement('h4');
-    cardTitle.className = 'setup-card-title';
-    cardTitle.textContent = guide.title;
-    cardHeader.appendChild(cardTitle);
+    const titleEl = document.createElement('h4');
+    titleEl.className = 'setup-block-title';
+    titleEl.textContent = guide.title;
+    blockHeader.appendChild(titleEl);
 
-    // Confidence badge
-    const confBadge = document.createElement('span');
+    // Confidence badge in technical bracketed format
+    const confTag = document.createElement('span');
     const confClass =
       guide.confidence === 'Detected'
-        ? 'pill-success'
+        ? 'badge-tag-nominal'
         : guide.confidence === 'Suggested'
-        ? 'pill-accent'
-        : 'pill-warning';
-    confBadge.className = `pill ${confClass}`;
-    confBadge.textContent = guide.confidence;
-    cardHeader.appendChild(confBadge);
+        ? 'badge-tag-info'
+        : 'badge-tag-warning';
 
-    card.appendChild(cardHeader);
+    confTag.className = `badge-tag ${confClass}`;
+    confTag.innerHTML = `<span class="badge-led"></span>[${guide.confidence.toUpperCase().replace(/\s+/g, '_')}]`;
+    blockHeader.appendChild(confTag);
 
-    // Command block if present
+    block.appendChild(blockHeader);
+
+    // Command Bar
     if (guide.command) {
-      const cmdWrapper = document.createElement('div');
-      cmdWrapper.className = 'command-box';
+      const cmdBar = document.createElement('div');
+      cmdBar.className = 'terminal-cmd-bar';
 
-      const codeEl = document.createElement('code');
-      codeEl.className = 'command-code';
-      codeEl.textContent = guide.command;
-      cmdWrapper.appendChild(codeEl);
+      const gutter = document.createElement('span');
+      gutter.className = 'cmd-gutter-num';
+      gutter.textContent = '01 $';
+      cmdBar.appendChild(gutter);
+
+      const code = document.createElement('code');
+      code.className = 'terminal-cmd-code';
+      code.textContent = guide.command;
+      cmdBar.appendChild(code);
 
       const copyBtn = document.createElement('button');
       copyBtn.type = 'button';
-      copyBtn.className = 'btn btn-secondary btn-sm copy-btn';
-      copyBtn.setAttribute('aria-label', `Copy command: ${guide.command}`);
-      copyBtn.innerHTML = '<span class="copy-icon" aria-hidden="true">📋</span> Copy';
+      copyBtn.className = 'btn btn-secondary btn-sm';
+      copyBtn.innerHTML = '[COPY_CMD]';
 
       copyBtn.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(guide.command);
-          copyBtn.innerHTML = '<span class="copy-icon" aria-hidden="true">✓</span> Copied!';
+          copyBtn.innerHTML = '<span style="color: #10B981;">[COPIED_OK ✓]</span>';
           copyBtn.classList.add('btn-success');
           setTimeout(() => {
-            copyBtn.innerHTML = '<span class="copy-icon" aria-hidden="true">📋</span> Copy';
+            copyBtn.innerHTML = '[COPY_CMD]';
             copyBtn.classList.remove('btn-success');
           }, 2000);
         } catch {
-          copyBtn.textContent = 'Failed to copy';
+          copyBtn.textContent = '[COPY_FAILED]';
         }
       });
 
-      cmdWrapper.appendChild(copyBtn);
-      card.appendChild(cmdWrapper);
+      cmdBar.appendChild(copyBtn);
+      block.appendChild(cmdBar);
     }
 
-    // Evidence & note metadata
-    const metaBox = document.createElement('div');
-    metaBox.className = 'setup-card-meta';
+    // Metadata Row
+    const metaRow = document.createElement('div');
+    metaRow.className = 'setup-meta-row';
 
     if (guide.evidence) {
-      const evLine = document.createElement('div');
-      evLine.className = 'setup-meta-line';
-      evLine.innerHTML = `<span class="meta-label">Evidence:</span> <span class="meta-value">${guide.evidence}</span>`;
-      metaBox.appendChild(evLine);
+      const evSpan = document.createElement('span');
+      evSpan.innerHTML = `EVIDENCE: <span class="setup-evidence-val">${guide.evidence}</span>`;
+      metaRow.appendChild(evSpan);
     }
 
     if (guide.note) {
-      const noteLine = document.createElement('div');
-      noteLine.className = 'setup-meta-note';
-      noteLine.textContent = guide.note;
-      metaBox.appendChild(noteLine);
+      const noteSpan = document.createElement('span');
+      noteSpan.className = 'setup-note-text';
+      noteSpan.textContent = `// ${guide.note}`;
+      metaRow.appendChild(noteSpan);
     }
 
     if (guide.sourceUrl) {
-      const linkLine = document.createElement('div');
-      linkLine.className = 'setup-meta-link';
-      linkLine.innerHTML = `<a href="${guide.sourceUrl}" target="_blank" rel="noopener noreferrer">View file on GitHub ↗</a>`;
-      metaBox.appendChild(linkLine);
+      const linkSpan = document.createElement('span');
+      linkSpan.innerHTML = `<a href="${guide.sourceUrl}" target="_blank" rel="noopener noreferrer" style="color: #EDEDED; text-decoration: underline;">SOURCE_FILE ↗</a>`;
+      metaRow.appendChild(linkSpan);
     }
 
-    card.appendChild(metaBox);
-    cardsWrapper.appendChild(card);
+    block.appendChild(metaRow);
+    stack.appendChild(block);
   });
 
-  panel.appendChild(cardsWrapper);
+  panel.appendChild(stack);
   container.appendChild(panel);
 }

@@ -1,8 +1,6 @@
 /**
- * Contribution panel component:
- * - Direct links to GitHub issues, pull requests, and discussions
- * - Direct link to CONTRIBUTING.md or LICENSE when detected
- * - Friendly beginner tips for safe first-time contributions
+ * INDUSTRIAL MODERNIST CONTRIBUTE MATRIX
+ * High-density vector nodes for issues, pull requests, contributing guidelines, and licensing.
  */
 
 /**
@@ -18,140 +16,134 @@ export function renderContribute(container, { owner, repo, metadata, detection, 
   container.innerHTML = '';
 
   const panel = document.createElement('div');
-  panel.className = 'panel-card contribute-panel-card';
+  panel.className = 'contribute-module-panel';
 
-  // Header
+  // Panel Header Bar
   const header = document.createElement('div');
-  header.className = 'panel-header';
-
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'panel-title-group';
-
-  const title = document.createElement('h3');
-  title.className = 'section-title';
-  title.textContent = 'Contribution & Community Entry Points';
-
-  titleGroup.appendChild(title);
-  header.appendChild(titleGroup);
+  header.className = 'panel-header-bar';
+  header.innerHTML = `
+    <div class="panel-header-left">
+      <span class="panel-id-label">MODULE // 05_CONTRIBUTE_VECTORS</span>
+      <span class="badge-tag">[COMMUNITY_INTERFACE]</span>
+    </div>
+    <div class="panel-header-right">
+      <span class="badge-tag">[EXTERNAL_GATEWAY]</span>
+    </div>
+  `;
   panel.appendChild(header);
 
-  // Cards grid
+  // Hairline Matrix Grid
   const grid = document.createElement('div');
-  grid.className = 'contribute-grid';
+  grid.className = 'contribute-matrix-grid';
 
   const ghBase = `https://github.com/${owner}/${repo}`;
   const openIssuesCount = typeof metadata.open_issues_count === 'number' ? metadata.open_issues_count : null;
 
-  // 1. Issues Card
-  const issuesCard = document.createElement('div');
-  issuesCard.className = 'contribute-card';
-  issuesCard.innerHTML = `
-    <div class="contribute-card-header">
-      <span class="contribute-icon">🐛</span>
-      <h4 class="contribute-card-title">Issues</h4>
-      ${openIssuesCount !== null ? `<span class="pill pill-neutral">${openIssuesCount} open</span>` : ''}
+  // 1. Issues Node
+  const issuesNode = document.createElement('div');
+  issuesNode.className = 'contribute-node';
+  issuesNode.innerHTML = `
+    <div>
+      <div class="node-header">
+        <span class="node-title">01 // ISSUE_TRACKER</span>
+        ${openIssuesCount !== null ? `<span class="badge-tag">[OPEN: ${openIssuesCount}]</span>` : ''}
+      </div>
+      <p class="node-desc">
+        Inspect live bug reports, proposed feature requests, or filter by beginner-friendly entry labels.
+      </p>
     </div>
-    <p class="contribute-card-desc">
-      Inspect existing bug reports, feature requests, or search for tasks tagged with beginner-friendly labels.
-    </p>
-    <div class="contribute-card-actions">
+    <div class="node-actions">
       <a href="${ghBase}/issues" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer">
-        Open Issues ↗
+        ALL_ISSUES ↗
       </a>
       <a href="${ghBase}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
-        "good first issue" ↗
+        GOOD_FIRST_ISSUE ↗
       </a>
     </div>
   `;
-  grid.appendChild(issuesCard);
+  grid.appendChild(issuesNode);
 
-  // 2. Pull Requests Card
-  const prCard = document.createElement('div');
-  prCard.className = 'contribute-card';
-  prCard.innerHTML = `
-    <div class="contribute-card-header">
-      <span class="contribute-icon">🔀</span>
-      <h4 class="contribute-card-title">Pull Requests</h4>
+  // 2. Pull Requests Node
+  const prNode = document.createElement('div');
+  prNode.className = 'contribute-node';
+  prNode.innerHTML = `
+    <div>
+      <div class="node-header">
+        <span class="node-title">02 // PULL_REQUESTS</span>
+        <span class="badge-tag">[ACTIVE_REVIEWS]</span>
+      </div>
+      <p class="node-desc">
+        Examine open contributor pull requests, recent branch merges, and review discussions.
+      </p>
     </div>
-    <p class="contribute-card-desc">
-      See ongoing code contributions, review discussions, and recent collaborator activity.
-    </p>
-    <div class="contribute-card-actions">
+    <div class="node-actions">
       <a href="${ghBase}/pulls" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
-        Open Pull Requests ↗
+        OPEN_PRS ↗
       </a>
     </div>
   `;
-  grid.appendChild(prCard);
+  grid.appendChild(prNode);
 
-  // 3. Contributing Guidelines Card
-  const contribCard = document.createElement('div');
-  contribCard.className = 'contribute-card';
+  // 3. Contributing Guidelines Node
+  const contribNode = document.createElement('div');
+  contribNode.className = 'contribute-node';
   const contribFile = detection.contributingFile;
 
-  if (contribFile) {
-    contribCard.innerHTML = `
-      <div class="contribute-card-header">
-        <span class="contribute-icon">📋</span>
-        <h4 class="contribute-card-title">Contribution Guide</h4>
-        <span class="pill pill-success">Detected in root</span>
+  contribNode.innerHTML = `
+    <div>
+      <div class="node-header">
+        <span class="node-title">03 // CONTRIBUTING_GUIDE</span>
+        <span class="badge-tag ${contribFile ? 'badge-tag-nominal' : ''}">${contribFile ? `[FOUND: ${contribFile}]` : '[NOT_DETECTED]'}</span>
       </div>
-      <p class="contribute-card-desc">
-        The repository provides a dedicated <code>${contribFile}</code> with guidelines on code style, branch naming, and PR checklists.
+      <p class="node-desc">
+        ${contribFile
+          ? `Repository provides explicit guidelines in ${contribFile} for branch naming, linting, and tests.`
+          : 'No standalone CONTRIBUTING file detected in root. Review the README for contribution guidelines.'}
       </p>
-      <div class="contribute-card-actions">
-        <a href="${ghBase}/blob/${defaultBranch}/${contribFile}" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer">
-          Read ${contribFile} ↗
-        </a>
-      </div>
-    `;
-  } else {
-    contribCard.innerHTML = `
-      <div class="contribute-card-header">
-        <span class="contribute-icon">📋</span>
-        <h4 class="contribute-card-title">Contribution Guide</h4>
-        <span class="pill pill-neutral">Not detected in root</span>
-      </div>
-      <p class="contribute-card-desc">
-        No dedicated CONTRIBUTING file was found in the root directory. Check the README or docs directory for contribution steps.
-      </p>
-      <div class="contribute-card-actions">
-        <a href="${ghBase}#readme" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
-          Check README ↗
-        </a>
-      </div>
-    `;
-  }
-  grid.appendChild(contribCard);
-
-  // 4. License Card
-  const licenseCard = document.createElement('div');
-  licenseCard.className = 'contribute-card';
-  const licenseName = metadata.license && metadata.license.spdx_id ? metadata.license.spdx_id : metadata.license?.name;
-  const licenseFile = detection.licenseFile;
-
-  licenseCard.innerHTML = `
-    <div class="contribute-card-header">
-      <span class="contribute-icon">⚖️</span>
-      <h4 class="contribute-card-title">License</h4>
-      <span class="pill ${licenseName ? 'pill-accent' : 'pill-neutral'}">${licenseName || 'No SPDX license detected'}</span>
     </div>
-    <p class="contribute-card-desc">
-      ${licenseName ? `Licensed under ${licenseName}. Check permissions and restrictions before copying or distributing code.` : 'No standard license declared in metadata. Inspect repository root directly.'}
-    </p>
-    <div class="contribute-card-actions">
-      ${licenseFile ? `
-        <a href="${ghBase}/blob/${defaultBranch}/${licenseFile}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
-          View ${licenseFile} ↗
+    <div class="node-actions">
+      ${contribFile ? `
+        <a href="${ghBase}/blob/${defaultBranch}/${contribFile}" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer">
+          VIEW_${contribFile.toUpperCase()} ↗
         </a>
       ` : `
-        <a href="${ghBase}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
-          View Repository ↗
+        <a href="${ghBase}#readme" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
+          CHECK_README ↗
         </a>
       `}
     </div>
   `;
-  grid.appendChild(licenseCard);
+  grid.appendChild(contribNode);
+
+  // 4. License & Compliance Node
+  const licenseNode = document.createElement('div');
+  licenseNode.className = 'contribute-node';
+  const licenseName = metadata.license?.spdx_id || metadata.license?.name || null;
+  const licenseFile = detection.licenseFile;
+
+  licenseNode.innerHTML = `
+    <div>
+      <div class="node-header">
+        <span class="node-title">04 // COMPLIANCE_LICENSE</span>
+        <span class="badge-tag ${licenseName ? 'badge-tag-info' : ''}">[${licenseName || 'NO_SPDX'}]</span>
+      </div>
+      <p class="node-desc">
+        ${licenseName ? `Governed under ${licenseName}. Check usage and redistribution terms before cloning.` : 'No standard SPDX license reported in GitHub metadata.'}
+      </p>
+    </div>
+    <div class="node-actions">
+      ${licenseFile ? `
+        <a href="${ghBase}/blob/${defaultBranch}/${licenseFile}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
+          VIEW_${licenseFile.toUpperCase()} ↗
+        </a>
+      ` : `
+        <a href="${ghBase}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
+          GH_SOURCE ↗
+        </a>
+      `}
+    </div>
+  `;
+  grid.appendChild(licenseNode);
 
   panel.appendChild(grid);
   container.appendChild(panel);

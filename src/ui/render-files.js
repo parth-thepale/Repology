@@ -1,16 +1,14 @@
 /**
- * File explorer component:
- * - Renders sorted root directories and files with icons and sizes
- * - Safe external links directly to GitHub tree/blob paths
- * - Real-time client filter search
- * - P1-01 On-demand lazy folder expansion
+ * INDUSTRIAL MODERNIST FILE EXPLORER
+ * High-density monospace table, sharp [+] / [-] folder toggles,
+ * hairline borders, and lazy child directory expansion.
  */
 
 import { formatFileSize, getFileIconInfo } from '../core/formatters.js';
 import { getRepoContents } from '../services/repository-service.js';
 
 /**
- * Creates a file or directory row element.
+ * Creates a technical file or directory row.
  * @param {import('../core/detect-project.js').RootFileEntry} entry
  * @param {string} owner
  * @param {string} repo
@@ -20,40 +18,33 @@ import { getRepoContents } from '../services/repository-service.js';
  */
 function createFileRow(entry, owner, repo, defaultBranch, level = 0) {
   const row = document.createElement('div');
-  row.className = `file-row ${entry.type === 'dir' ? 'file-row-dir' : 'file-row-file'}`;
-  row.style.paddingLeft = `${level * 1.25 + 0.75}rem`;
+  row.className = 'file-row-item';
+  row.style.paddingLeft = `${level * 1.25 + 1}rem`;
   row.dataset.name = entry.name.toLowerCase();
 
   const iconInfo = getFileIconInfo(entry);
 
   const leftGroup = document.createElement('div');
-  leftGroup.className = 'file-row-left';
+  leftGroup.className = 'file-item-left';
 
-  // If directory, add expander toggle
   let expandToggle = null;
   if (entry.type === 'dir') {
     expandToggle = document.createElement('button');
     expandToggle.type = 'button';
-    expandToggle.className = 'folder-toggle-btn';
+    expandToggle.className = 'folder-tree-toggle';
     expandToggle.setAttribute('aria-expanded', 'false');
     expandToggle.setAttribute('aria-label', `Expand folder ${entry.name}`);
-    expandToggle.textContent = '▶';
+    expandToggle.textContent = '+';
     leftGroup.appendChild(expandToggle);
   } else {
     const spacer = document.createElement('span');
-    spacer.className = 'folder-toggle-spacer';
+    spacer.className = 'file-spacer';
     leftGroup.appendChild(spacer);
   }
 
-  const iconEl = document.createElement('span');
-  iconEl.className = 'file-icon';
-  iconEl.textContent = iconInfo.icon;
-  iconEl.setAttribute('aria-hidden', 'true');
-  leftGroup.appendChild(iconEl);
-
   const link = document.createElement('a');
-  link.className = 'file-name-link';
-  link.textContent = entry.name;
+  link.className = 'file-item-name';
+  link.textContent = entry.type === 'dir' ? `${entry.name}/` : entry.name;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
 
@@ -65,24 +56,24 @@ function createFileRow(entry, owner, repo, defaultBranch, level = 0) {
   row.appendChild(leftGroup);
 
   const rightGroup = document.createElement('div');
-  rightGroup.className = 'file-row-right';
+  rightGroup.className = 'file-item-right';
 
   const badge = document.createElement('span');
-  badge.className = 'file-category-badge';
-  badge.textContent = iconInfo.label;
+  badge.className = 'badge-tag';
+  badge.textContent = `[${iconInfo.label.toUpperCase().replace(/\s+/g, '_')}]`;
   rightGroup.appendChild(badge);
 
   const sizeEl = document.createElement('span');
-  sizeEl.className = 'file-size';
-  sizeEl.textContent = entry.type === 'dir' ? '' : formatFileSize(entry.size);
+  sizeEl.className = 'file-size-val';
+  sizeEl.textContent = entry.type === 'dir' ? '—' : formatFileSize(entry.size);
   rightGroup.appendChild(sizeEl);
 
   row.appendChild(rightGroup);
 
-  // Lazy child container for directory expansion
+  // Lazy directory expansion container
   if (entry.type === 'dir') {
     const childrenContainer = document.createElement('div');
-    childrenContainer.className = 'folder-children-container';
+    childrenContainer.className = 'folder-children-stack';
     childrenContainer.style.display = 'none';
 
     let isLoaded = false;
@@ -92,17 +83,17 @@ function createFileRow(entry, owner, repo, defaultBranch, level = 0) {
       e.stopPropagation();
       isExpanded = !isExpanded;
       expandToggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-      expandToggle.textContent = isExpanded ? '▼' : '▶';
+      expandToggle.textContent = isExpanded ? '-' : '+';
 
       if (isExpanded) {
         childrenContainer.style.display = 'block';
 
         if (!isLoaded) {
-          const loadingNotice = document.createElement('div');
-          loadingNotice.className = 'file-loading-notice';
-          loadingNotice.style.paddingLeft = `${(level + 1) * 1.25 + 0.75}rem`;
-          loadingNotice.textContent = 'Loading directory contents...';
-          childrenContainer.appendChild(loadingNotice);
+          const loadingRow = document.createElement('div');
+          loadingRow.className = 'file-row-item';
+          loadingRow.style.paddingLeft = `${(level + 1) * 1.25 + 1}rem`;
+          loadingRow.innerHTML = '<span class="text-muted" style="color: #666; font-size: 11px;">[FETCHING_CHILD_NODES...]</span>';
+          childrenContainer.appendChild(loadingRow);
 
           const res = await getRepoContents(owner, repo, defaultBranch, basePath);
           childrenContainer.innerHTML = '';
@@ -121,17 +112,17 @@ function createFileRow(entry, owner, repo, defaultBranch, level = 0) {
               );
             });
           } else if (res.ok && Array.isArray(res.data) && res.data.length === 0) {
-            const emptyNotice = document.createElement('div');
-            emptyNotice.className = 'file-empty-notice';
-            emptyNotice.style.paddingLeft = `${(level + 1) * 1.25 + 0.75}rem`;
-            emptyNotice.textContent = 'Directory is empty.';
-            childrenContainer.appendChild(emptyNotice);
+            const emptyRow = document.createElement('div');
+            emptyRow.className = 'file-row-item';
+            emptyRow.style.paddingLeft = `${(level + 1) * 1.25 + 1}rem`;
+            emptyRow.innerHTML = '<span class="text-muted" style="color: #666; font-size: 11px;">[DIRECTORY_EMPTY]</span>';
+            childrenContainer.appendChild(emptyRow);
           } else {
-            const errNotice = document.createElement('div');
-            errNotice.className = 'file-error-notice';
-            errNotice.style.paddingLeft = `${(level + 1) * 1.25 + 0.75}rem`;
-            errNotice.textContent = 'Could not load directory contents from GitHub.';
-            childrenContainer.appendChild(errNotice);
+            const errRow = document.createElement('div');
+            errRow.className = 'file-row-item';
+            errRow.style.paddingLeft = `${(level + 1) * 1.25 + 1}rem`;
+            errRow.innerHTML = '<span class="text-muted" style="color: #EF4444; font-size: 11px;">[ERR_FETCHING_CHILDREN]</span>';
+            childrenContainer.appendChild(errRow);
           }
         }
       } else {
@@ -140,7 +131,6 @@ function createFileRow(entry, owner, repo, defaultBranch, level = 0) {
     });
 
     const wrapper = document.createElement('div');
-    wrapper.className = 'folder-group-wrapper';
     wrapper.appendChild(row);
     wrapper.appendChild(childrenContainer);
     return wrapper;
@@ -150,7 +140,6 @@ function createFileRow(entry, owner, repo, defaultBranch, level = 0) {
 }
 
 /**
- * Renders the file explorer panel.
  * @param {HTMLElement} container
  * @param {Object} params
  * @param {import('../core/detect-project.js').RootFileEntry[]} params.entries
@@ -163,88 +152,73 @@ export function renderFiles(container, { entries = [], owner, repo, defaultBranc
   container.innerHTML = '';
 
   const panel = document.createElement('div');
-  panel.className = 'panel-card files-panel-card';
-
-  // Header
-  const header = document.createElement('div');
-  header.className = 'panel-header';
-
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'panel-title-group';
-
-  const title = document.createElement('h3');
-  title.className = 'section-title';
-  title.textContent = 'Root Directory Structure';
+  panel.className = 'file-matrix-container';
 
   const dirCount = entries.filter((e) => e.type === 'dir').length;
   const fileCount = entries.filter((e) => e.type !== 'dir').length;
 
-  const countBadge = document.createElement('span');
-  countBadge.className = 'pill pill-neutral';
-  countBadge.textContent = `${dirCount} folders, ${fileCount} files`;
-
-  titleGroup.appendChild(title);
-  titleGroup.appendChild(countBadge);
-  header.appendChild(titleGroup);
-
-  // Search filter and external GitHub link
-  const actions = document.createElement('div');
-  actions.className = 'files-actions';
-
-  if (entries.length > 0) {
-    const searchInput = document.createElement('input');
-    searchInput.type = 'search';
-    searchInput.className = 'form-input file-filter-input';
-    searchInput.placeholder = 'Filter root files...';
-    searchInput.setAttribute('aria-label', 'Filter root files by name');
-
-    searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase().trim();
-      const rows = listWrapper.querySelectorAll('.file-row');
-      rows.forEach((r) => {
-        const name = r.dataset.name || '';
-        if (!term || name.includes(term)) {
-          r.style.display = 'flex';
-        } else {
-          r.style.display = 'none';
-        }
-      });
-    });
-
-    actions.appendChild(searchInput);
-  }
-
-  const browseBtn = document.createElement('a');
-  browseBtn.className = 'btn btn-secondary btn-sm';
-  browseBtn.href = `https://github.com/${owner}/${repo}/tree/${defaultBranch}`;
-  browseBtn.target = '_blank';
-  browseBtn.rel = 'noopener noreferrer';
-  browseBtn.textContent = 'Browse on GitHub ↗';
-  actions.appendChild(browseBtn);
-
-  header.appendChild(actions);
+  // Header Bar
+  const header = document.createElement('div');
+  header.className = 'panel-header-bar';
+  header.innerHTML = `
+    <div class="panel-header-left">
+      <span class="panel-id-label">MODULE // 02_ROOT_DIRECTORY_TREE</span>
+      <span class="badge-tag">[DIRS: ${dirCount}]</span>
+      <span class="badge-tag">[FILES: ${fileCount}]</span>
+    </div>
+    <div class="panel-header-right">
+      <a href="https://github.com/${owner}/${repo}/tree/${defaultBranch}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+        RAW_TREE ↗
+      </a>
+    </div>
+  `;
   panel.appendChild(header);
 
-  // Contents
-  const listWrapper = document.createElement('div');
-  listWrapper.className = 'files-list-wrapper';
+  // Search filter bar
+  const filterBar = document.createElement('div');
+  filterBar.className = 'file-filter-bar';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.className = 'matrix-search-input';
+  searchInput.placeholder = 'FILTER_FILENAME...';
+  searchInput.setAttribute('aria-label', 'Filter root files by name');
+
+  const rowsContainer = document.createElement('div');
+  rowsContainer.className = 'file-rows-stack';
+
+  searchInput.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase().trim();
+    const rows = rowsContainer.querySelectorAll('.file-row-item');
+    rows.forEach((r) => {
+      const name = r.dataset.name || '';
+      if (!term || name.includes(term)) {
+        r.style.display = 'flex';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  });
+
+  filterBar.appendChild(searchInput);
+  filterBar.innerHTML += '<span class="text-dim" style="font-family: var(--font-mono); font-size: 11px;">SORT: DIRS_FIRST // ALPHA</span>';
+  filterBar.prepend(searchInput);
+  panel.appendChild(filterBar);
 
   if (error) {
     const errorBox = document.createElement('div');
-    errorBox.className = 'empty-state-box';
+    errorBox.className = 'radar-telemetry-error';
     errorBox.innerHTML = `
-      <div class="empty-state-icon">⚠️</div>
-      <h4 class="empty-state-title">Directory listing unavailable</h4>
-      <p class="empty-state-text">${error.message || 'Could not load root directory entries from GitHub.'}</p>
+      <div class="error-headline">[ERR_FETCH_TREE]</div>
+      <div class="error-log-stream">${error.message || 'Could not load root directory entries from GitHub.'}</div>
     `;
     panel.appendChild(errorBox);
   } else if (entries.length === 0) {
     const emptyBox = document.createElement('div');
-    emptyBox.className = 'empty-state-box';
+    emptyBox.className = 'radar-telemetry-error';
     emptyBox.innerHTML = `
-      <div class="empty-state-icon">📂</div>
-      <h4 class="empty-state-title">No top-level files returned</h4>
-      <p class="empty-state-text">The repository root has no files or the repository is empty.</p>
+      <div class="error-headline">[ROOT_DIRECTORY_EMPTY]</div>
+      <p style="color: #737373; font-size: 13px;">No files returned from GitHub API for this repository root.</p>
     `;
     panel.appendChild(emptyBox);
   } else {
@@ -256,10 +230,10 @@ export function renderFiles(container, { entries = [], owner, repo, defaultBranc
     });
 
     sorted.forEach((entry) => {
-      listWrapper.appendChild(createFileRow(entry, owner, repo, defaultBranch, 0));
+      rowsContainer.appendChild(createFileRow(entry, owner, repo, defaultBranch, 0));
     });
 
-    panel.appendChild(listWrapper);
+    panel.appendChild(rowsContainer);
   }
 
   container.appendChild(panel);

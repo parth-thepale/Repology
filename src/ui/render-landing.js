@@ -1,9 +1,6 @@
 /**
- * Landing page component:
- * - Brand wordmark and clear value proposition
- * - Accessible form with visible label, inline validation live region
- * - Pre-filled sample repositories
- * - Transparent privacy and read-only badges
+ * INDUSTRIAL MODERNIST LANDING CONSOLE
+ * High-density blueprint with prompt input, keycap triggers, corner brackets, and exposed hairline bento grid.
  */
 
 /**
@@ -16,188 +13,198 @@
 export function renderLanding(container, { onSubmit, initialValue = '', initialError = '' }) {
   container.innerHTML = '';
 
-  const landingWrapper = document.createElement('div');
-  landingWrapper.className = 'landing-wrapper';
+  const consoleWrapper = document.createElement('div');
+  consoleWrapper.className = 'landing-console';
+
+  // Section Blueprint Bar
+  const blueprintBar = document.createElement('div');
+  blueprintBar.className = 'section-blueprint-bar';
+  blueprintBar.innerHTML = `
+    <span class="blueprint-eyebrow">00 // REPOSITORY_ORIENTATION_RADAR</span>
+    <span class="blueprint-coords">[SYS_GRID: 1440px / 1px_HAIRLINE]</span>
+  `;
+  consoleWrapper.appendChild(blueprintBar);
 
   // Hero Section
-  const hero = document.createElement('section');
-  hero.className = 'landing-hero';
+  const heroBlock = document.createElement('section');
+  heroBlock.className = 'hero-block';
 
-  const badgeRow = document.createElement('div');
-  badgeRow.className = 'landing-badge-row';
-  badgeRow.innerHTML = `
-    <span class="pill pill-accent">Open Source Repository Orientation</span>
-    <span class="pill pill-neutral">Read-only MVP</span>
+  const metaRow = document.createElement('div');
+  metaRow.className = 'hero-header-meta';
+  metaRow.innerHTML = `
+    <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>ACTIVE_RECON</span>
+    <span class="badge-tag">[UNAUTHENTICATED_REST]</span>
+    <span class="badge-tag">[READ_ONLY]</span>
   `;
-  hero.appendChild(badgeRow);
+  heroBlock.appendChild(metaRow);
 
   const headline = document.createElement('h1');
-  headline.className = 'landing-headline';
-  headline.textContent = 'Get oriented in any open-source repo.';
-  hero.appendChild(headline);
+  headline.className = 'hero-headline';
+  headline.textContent = 'Orient in any public repository. Deterministic facts, zero hallucination.';
+  heroBlock.appendChild(headline);
 
   const subline = document.createElement('p');
-  subline.className = 'landing-subline';
-  subline.textContent = 'A clear first map of the code, setup signals, and contribution links. Grounded in evidence, not hallucinated summaries.';
-  hero.appendChild(subline);
+  subline.className = 'hero-subline';
+  subline.textContent = 'Direct GitHub REST telemetry. Inspect root architecture, detect real manifest signals, view sanitized README markdown, and locate verified contribution entry points without code execution.';
+  heroBlock.appendChild(subline);
 
-  // Form Section
-  const formCard = document.createElement('div');
-  formCard.className = 'landing-form-card';
+  // Radar Input Panel with Corner Brackets
+  const radarPanel = document.createElement('div');
+  radarPanel.className = 'radar-input-panel';
+
+  // Corner Ticks (Blueprint CAD look)
+  radarPanel.innerHTML = `
+    <span class="corner-tick corner-tl" aria-hidden="true"></span>
+    <span class="corner-tick corner-tr" aria-hidden="true"></span>
+    <span class="corner-tick corner-bl" aria-hidden="true"></span>
+    <span class="corner-tick corner-br" aria-hidden="true"></span>
+  `;
 
   const form = document.createElement('form');
-  form.className = 'repo-form';
   form.noValidate = true;
 
-  const label = document.createElement('label');
-  label.htmlFor = 'repo-url-input';
-  label.className = 'form-label';
-  label.textContent = 'GitHub Repository URL or owner/repo';
-
   const inputGroup = document.createElement('div');
-  inputGroup.className = 'input-group';
+  inputGroup.className = 'radar-input-group';
+
+  const prefixBox = document.createElement('div');
+  prefixBox.className = 'input-prefix-box';
+
+  const promptPrefix = document.createElement('span');
+  promptPrefix.className = 'prompt-prefix';
+  promptPrefix.textContent = 'gh://github.com/';
 
   const input = document.createElement('input');
   input.id = 'repo-url-input';
   input.name = 'repoUrl';
   input.type = 'text';
-  input.className = 'form-input form-input-lg';
-  input.placeholder = 'e.g. vitejs/vite or https://github.com/expressjs/express';
+  input.className = 'radar-input';
+  input.placeholder = 'owner/repo (e.g. vitejs/vite)';
   input.value = initialValue;
   input.autocomplete = 'off';
   input.spellcheck = false;
-  input.setAttribute('aria-describedby', 'input-hint input-error');
+  input.setAttribute('aria-label', 'GitHub Repository identifier');
+
+  const keycapHint = document.createElement('span');
+  keycapHint.className = 'input-keycap-hint';
+  keycapHint.innerHTML = '<span class="keycap">ENTER ↵</span>';
+
+  prefixBox.appendChild(promptPrefix);
+  prefixBox.appendChild(input);
+  prefixBox.appendChild(keycapHint);
 
   const submitBtn = document.createElement('button');
   submitBtn.type = 'submit';
-  submitBtn.className = 'btn btn-primary btn-lg submit-btn';
-  submitBtn.textContent = 'Explore repository';
+  submitBtn.className = 'btn btn-primary';
+  submitBtn.innerHTML = 'ANALYZE_REPO <span class="btn-arrow" aria-hidden="true">→</span>';
 
-  inputGroup.appendChild(input);
+  inputGroup.appendChild(prefixBox);
   inputGroup.appendChild(submitBtn);
 
-  const errorContainer = document.createElement('div');
-  errorContainer.id = 'input-error';
-  errorContainer.className = 'form-error';
-  errorContainer.setAttribute('aria-live', 'polite');
+  const errorEl = document.createElement('div');
+  errorEl.className = 'radar-error';
+  errorEl.setAttribute('aria-live', 'polite');
   if (initialError) {
-    errorContainer.textContent = initialError;
-    input.classList.add('form-input-error');
+    errorEl.textContent = `[ERR] ${initialError}`;
   }
 
-  const hintContainer = document.createElement('div');
-  hintContainer.id = 'input-hint';
-  hintContainer.className = 'form-hint';
-  hintContainer.innerHTML = 'Supports <code>owner/repo</code>, full GitHub URLs, and trailing <code>.git</code>. Public repositories only.';
-
-  form.appendChild(label);
   form.appendChild(inputGroup);
-  form.appendChild(errorContainer);
-  form.appendChild(hintContainer);
-  formCard.appendChild(form);
+  form.appendChild(errorEl);
+  radarPanel.appendChild(form);
 
-  // Quick sample repositories
-  const samplesRow = document.createElement('div');
-  samplesRow.className = 'sample-repos-row';
+  // Preset selector
+  const presetsRow = document.createElement('div');
+  presetsRow.className = 'presets-row';
 
-  const sampleLabel = document.createElement('span');
-  sampleLabel.className = 'sample-label';
-  sampleLabel.textContent = 'Try a sample repository:';
-  samplesRow.appendChild(sampleLabel);
+  const presetLabel = document.createElement('span');
+  presetLabel.className = 'presets-label';
+  presetLabel.textContent = 'PRESET_REPOSITORIES:';
+  presetsRow.appendChild(presetLabel);
 
-  const samples = [
-    { name: 'vitejs/vite', lang: 'TypeScript' },
-    { name: 'expressjs/express', lang: 'JavaScript' },
-    { name: 'fastapi/fastapi', lang: 'Python' },
-    { name: 'golang/go', lang: 'Go' },
+  const presets = [
+    { idx: '01', repo: 'vitejs/vite' },
+    { idx: '02', repo: 'expressjs/express' },
+    { idx: '03', repo: 'fastapi/fastapi' },
+    { idx: '04', repo: 'golang/go' },
   ];
 
-  samples.forEach((sample) => {
+  presets.forEach((p) => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'sample-chip';
-    chip.innerHTML = `<code>${sample.name}</code> <span class="sample-chip-lang">${sample.lang}</span>`;
+    chip.className = 'preset-chip';
+    chip.innerHTML = `<span class="chip-idx">[${p.idx}]</span> ${p.repo}`;
     chip.addEventListener('click', () => {
-      input.value = sample.name;
-      errorContainer.textContent = '';
-      input.classList.remove('form-input-error');
-      onSubmit(sample.name);
+      input.value = p.repo;
+      errorEl.textContent = '';
+      onSubmit(p.repo);
     });
-    samplesRow.appendChild(chip);
+    presetsRow.appendChild(chip);
   });
 
-  formCard.appendChild(samplesRow);
-  hero.appendChild(formCard);
+  radarPanel.appendChild(presetsRow);
+  heroBlock.appendChild(radarPanel);
+  consoleWrapper.appendChild(heroBlock);
 
-  // Privacy and honesty reassurance
-  const trustBar = document.createElement('div');
-  trustBar.className = 'landing-trust-bar';
-  trustBar.innerHTML = `
-    <div class="trust-item"><span class="trust-icon" aria-hidden="true">🔒</span> Read-only</div>
-    <div class="trust-item"><span class="trust-icon" aria-hidden="true">🚫</span> No sign-in or tokens</div>
-    <div class="trust-item"><span class="trust-icon" aria-hidden="true">⚡</span> Zero code execution</div>
-    <div class="trust-item"><span class="trust-icon" aria-hidden="true">🌐</span> Directly queries GitHub REST API</div>
-  `;
-  hero.appendChild(trustBar);
+  // Hairline Bento Grid (Exposed Structural Honesty)
+  const bentoGrid = document.createElement('section');
+  bentoGrid.className = 'hairline-grid-4';
 
-  landingWrapper.appendChild(hero);
-
-  // Feature Highlights Grid
-  const featuresSection = document.createElement('section');
-  featuresSection.className = 'landing-features';
-
-  const features = [
+  const specs = [
     {
-      icon: '🧭',
-      title: 'Top-Level Orientation',
-      desc: 'See repository metadata, primary language, license, branch structure, and root-level directories in one clear map.',
+      idx: '01 // TELEMETRY',
+      title: 'Fact Extractor',
+      desc: 'Pulls raw repository metrics: stars, forks, default branch, licenses, and primary GitHub language without intermediate hallucination.',
     },
     {
-      icon: '⚡',
-      title: 'Honest Setup Guidance',
-      desc: 'Identifies package managers and scripts from detected files. Commands are strictly categorized as Detected, Suggested, or Not verified.',
+      idx: '02 // INTEGRITY',
+      title: 'Evidence Verifier',
+      desc: 'Parses package.json scripts and lockfiles. Distinguishes verified detected commands from conventional suggestions and warns on conflicting lockfiles.',
     },
     {
-      icon: '🤝',
-      title: 'Safe First Step for Contributors',
-      desc: 'Jump directly to open issues, good first issues, pull requests, and contributing guidelines without digging through folders.',
+      idx: '03 // MATRIX',
+      title: 'Root Explorer',
+      desc: 'Direct file and directory mapping with on-demand child folder expansion and safe links to GitHub source tree lines.',
+    },
+    {
+      idx: '04 // AIRGAP',
+      title: 'Zero Execution',
+      desc: 'Untrusted README markdown is strictly sanitized via DOMPurify. Zero script execution, zero OAuth access tokens stored.',
     },
   ];
 
-  features.forEach((feat) => {
-    const col = document.createElement('div');
-    col.className = 'feature-card';
-    col.innerHTML = `
-      <div class="feature-icon" aria-hidden="true">${feat.icon}</div>
-      <h3 class="feature-title">${feat.title}</h3>
-      <p class="feature-desc">${feat.desc}</p>
+  specs.forEach((s) => {
+    const cell = document.createElement('div');
+    cell.className = 'bento-cell';
+    cell.innerHTML = `
+      <div class="bento-eyebrow">
+        <span>${s.idx}</span>
+        <span class="badge-led"></span>
+      </div>
+      <h3 class="bento-title">${s.title}</h3>
+      <p class="bento-desc">${s.desc}</p>
     `;
-    featuresSection.appendChild(col);
+    bentoGrid.appendChild(cell);
   });
 
-  landingWrapper.appendChild(featuresSection);
+  consoleWrapper.appendChild(bentoGrid);
 
-  // Form submit handler
+  // Form submit event
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const val = input.value.trim();
     if (!val) {
-      errorContainer.textContent = 'Enter a GitHub repository URL or owner/repo, such as vitejs/vite.';
-      input.classList.add('form-input-error');
+      errorEl.textContent = '[ERR] Enter a GitHub repository URL or owner/repo, such as vitejs/vite.';
       input.focus();
       return;
     }
-    errorContainer.textContent = '';
-    input.classList.remove('form-input-error');
+    errorEl.textContent = '';
     onSubmit(val);
   });
 
   input.addEventListener('input', () => {
-    if (errorContainer.textContent) {
-      errorContainer.textContent = '';
-      input.classList.remove('form-input-error');
+    if (errorEl.textContent) {
+      errorEl.textContent = '';
     }
   });
 
-  container.appendChild(landingWrapper);
+  container.appendChild(consoleWrapper);
 }

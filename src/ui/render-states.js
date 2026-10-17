@@ -1,10 +1,9 @@
 /**
- * Error, loading skeletons, and partial-data state rendering.
- * Strictly uses documented error copy from PRD section 13.
+ * INDUSTRIAL MODERNIST STATES
+ * Terminal radar loading stream, telemetry exception cards, and hairline banners.
  */
 
 /**
- * Renders an accessible full-page error state.
  * @param {HTMLElement} container
  * @param {Object} params
  * @param {import('../services/github-api.js').ApiError} params.error
@@ -15,66 +14,61 @@ export function renderErrorState(container, { error, onRetry, onReset }) {
   container.innerHTML = '';
 
   const card = document.createElement('div');
-  card.className = 'state-card state-card-error';
+  card.className = 'radar-telemetry-error';
   card.setAttribute('role', 'alert');
 
-  let icon = '⚠️';
-  let title = 'Unable to Load Repository';
+  let codeBadge = 'ERR_API_EXCEPTION';
   let isRateLimit = false;
 
   if (error.kind === 'not-found') {
-    icon = '🔍';
-    title = 'Repository Not Found or Private';
+    codeBadge = '404_REPOSITORY_NOT_FOUND_OR_PRIVATE';
   } else if (error.kind === 'rate-limit') {
-    icon = '⏳';
-    title = 'Rate Limit Reached';
+    codeBadge = '403_IP_RATE_LIMIT_EXCEEDED';
     isRateLimit = true;
   } else if (error.kind === 'network') {
-    icon = '📡';
-    title = 'Connection Problem';
+    codeBadge = 'NET_CONNECTION_FAILURE';
   }
 
-  const iconEl = document.createElement('div');
-  iconEl.className = 'state-icon';
-  iconEl.textContent = icon;
-  card.appendChild(iconEl);
+  const badgeRow = document.createElement('div');
+  badgeRow.className = 'error-badge-row';
+  badgeRow.innerHTML = `<span class="badge-tag badge-tag-critical">[${codeBadge}]</span>`;
+  card.appendChild(badgeRow);
 
-  const titleEl = document.createElement('h3');
-  titleEl.className = 'state-title';
-  titleEl.textContent = title;
-  card.appendChild(titleEl);
+  const headline = document.createElement('h3');
+  headline.className = 'error-headline';
+  headline.textContent = 'TELEMETRY EXCEPTION DETECTED';
+  card.appendChild(headline);
 
-  const msgEl = document.createElement('p');
-  msgEl.className = 'state-message';
-  msgEl.textContent = error.message;
-  card.appendChild(msgEl);
-
-  if (isRateLimit && error.resetTimeFormatted) {
-    const tip = document.createElement('div');
-    tip.className = 'state-subnote';
-    tip.textContent = `GitHub unauthenticated requests are limited to 60/hr per IP address. Your window resets around ${error.resetTimeFormatted}.`;
-    card.appendChild(tip);
-  }
+  const logBox = document.createElement('div');
+  logBox.className = 'error-log-stream';
+  logBox.innerHTML = `
+    <div>&gt; STATUS_CODE: ${error.status || 0}</div>
+    <div>&gt; MESSAGE: ${error.message}</div>
+    ${error.resetTimeFormatted ? `<div>&gt; RATE_LIMIT_RESET: ~${error.resetTimeFormatted} (Unauthenticated IP quota: 60/hr)</div>` : ''}
+  `;
+  card.appendChild(logBox);
 
   const actions = document.createElement('div');
-  actions.className = 'state-actions';
+  actions.style.display = 'flex';
+  actions.style.justifyContent = 'center';
+  actions.style.gap = '0.5rem';
 
   if (onRetry && !isRateLimit) {
     const retryBtn = document.createElement('button');
     retryBtn.type = 'button';
-    retryBtn.className = 'btn btn-primary';
-    retryBtn.textContent = 'Retry Request';
+    retryBtn.className = 'btn btn-primary btn-sm';
+    retryBtn.textContent = 'RETRY_STREAM ↵';
     retryBtn.addEventListener('click', onRetry);
     actions.appendChild(retryBtn);
   }
 
   if (onReset) {
-    const backBtn = document.createElement('button');
-    backBtn.type = 'button';
-    backBtn.className = 'btn btn-secondary';
-    backBtn.textContent = 'Change Repository';
-    backBtn.addEventListener('click', onReset);
-    actions.appendChild(backBtn);
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'btn btn-secondary btn-sm';
+    resetBtn.textContent = 'RESET_TARGET <ESC>';
+    resetBtn.addEventListener('click', onReset);
+    actions.appendChild(resetBtn);
   }
 
   card.appendChild(actions);
@@ -82,15 +76,14 @@ export function renderErrorState(container, { error, onRetry, onReset }) {
 }
 
 /**
- * Renders an animated skeleton placeholder while loading repository data.
  * @param {HTMLElement} container
- * @param {string} [statusMessage='Fetching repository from GitHub...']
+ * @param {string} [statusMessage='STREAMING_GITHUB_API_TELEMETRY...']
  */
-export function renderLoadingSkeleton(container, statusMessage = 'Fetching repository from GitHub...') {
+export function renderLoadingSkeleton(container, statusMessage = 'STREAMING_GITHUB_API_TELEMETRY...') {
   container.innerHTML = '';
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'loading-wrapper';
+  wrapper.className = 'skeleton-terminal';
   wrapper.setAttribute('role', 'status');
   wrapper.setAttribute('aria-live', 'polite');
 
@@ -99,64 +92,41 @@ export function renderLoadingSkeleton(container, statusMessage = 'Fetching repos
   liveText.textContent = statusMessage;
   wrapper.appendChild(liveText);
 
-  // Status progress header
-  const progressBox = document.createElement('div');
-  progressBox.className = 'loading-progress-box';
-  progressBox.innerHTML = `
-    <div class="loading-spinner" aria-hidden="true"></div>
-    <div class="loading-status-text">${statusMessage}</div>
+  // Status stream bar
+  const streamBar = document.createElement('div');
+  streamBar.className = 'skeleton-stream-bar';
+  streamBar.innerHTML = `
+    <span class="radar-blip"></span>
+    <span class="loading-status-text">&gt; ${statusMessage}</span>
   `;
-  wrapper.appendChild(progressBox);
+  wrapper.appendChild(streamBar);
 
-  // Skeleton header card
-  const headerSkeleton = document.createElement('div');
-  headerSkeleton.className = 'skeleton-card skeleton-header-card';
-  headerSkeleton.innerHTML = `
-    <div class="skeleton-line skeleton-title"></div>
-    <div class="skeleton-line skeleton-desc"></div>
-    <div class="skeleton-pills-row">
-      <div class="skeleton-pill"></div>
-      <div class="skeleton-pill"></div>
-      <div class="skeleton-pill"></div>
-      <div class="skeleton-pill"></div>
-    </div>
+  // Scanline body
+  const body = document.createElement('div');
+  body.className = 'skeleton-grid-body';
+  body.innerHTML = `
+    <div class="skeleton-bar" style="width: 45%;"></div>
+    <div class="skeleton-bar" style="width: 80%;"></div>
+    <div class="skeleton-bar" style="width: 60%;"></div>
+    <div class="skeleton-bar" style="width: 70%;"></div>
+    <div class="skeleton-bar" style="width: 35%;"></div>
   `;
-  wrapper.appendChild(headerSkeleton);
-
-  // Skeleton grid
-  const gridSkeleton = document.createElement('div');
-  gridSkeleton.className = 'skeleton-grid';
-  gridSkeleton.innerHTML = `
-    <div class="skeleton-card skeleton-panel">
-      <div class="skeleton-line skeleton-subheading"></div>
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-    </div>
-    <div class="skeleton-card skeleton-panel">
-      <div class="skeleton-line skeleton-subheading"></div>
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-      <div class="skeleton-line"></div>
-    </div>
-  `;
-  wrapper.appendChild(gridSkeleton);
+  wrapper.appendChild(body);
 
   container.appendChild(wrapper);
 }
 
 /**
- * Renders a dismissible partial failure alert banner if optional data failed to load.
  * @param {HTMLElement} container
  * @param {string} message
  */
 export function renderPartialAlert(container, message) {
   const alert = document.createElement('div');
-  alert.className = 'partial-alert-banner';
+  alert.className = 'partial-telemetry-banner';
   alert.setAttribute('role', 'status');
   alert.innerHTML = `
-    <span class="partial-alert-icon" aria-hidden="true">ℹ️</span>
-    <span class="partial-alert-text">${message}</span>
+    <span class="badge-tag badge-tag-warning">[ALERT]</span>
+    <span>${message}</span>
   `;
   container.prepend(alert);
 }

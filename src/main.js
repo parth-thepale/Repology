@@ -1,24 +1,40 @@
 /**
  * Main application wiring and state manager:
  * - URL state synchronization (?repo=owner/repo or #owner/repo)
+ * - Live mission-control header telemetry synchronization (quota, reset time)
+ * - Keyboard shortcuts (ESC to reset, ⌘K to search)
  * - Race-condition guard for in-flight requests (QA-18)
  * - Accessible state transitions (landing -> loading -> results / error)
- * - Keyboard navigation and brand reset handler
  */
 
 import { parseRepoUrl } from './core/parse-repo-url.js';
 import { analyzeRepository } from './services/repository-service.js';
+import { sessionRateLimit, formatResetTime } from './services/github-api.js';
 import { renderLanding } from './ui/render-landing.js';
 import { renderResults } from './ui/render-results.js';
 import { renderLoadingSkeleton, renderErrorState } from './ui/render-states.js';
 
 const appContainer = document.getElementById('app');
 
-/**
- * Global state tracker
- */
 let currentRequestId = 0;
 let lastSearchedRepo = '';
+
+/**
+ * Updates sticky top-bar rate limit telemetry counters
+ */
+function updateHeaderTelemetry() {
+  const remainingEl = document.getElementById('telemetry-rate-remaining');
+  const resetEl = document.getElementById('telemetry-rate-reset');
+
+  if (remainingEl && sessionRateLimit.remaining !== null) {
+    const total = sessionRateLimit.limit || 60;
+    remainingEl.textContent = `${sessionRateLimit.remaining}/${total}`;
+  }
+
+  if (resetEl && sessionRateLimit.resetEpoch !== null) {
+    resetEl.textContent = formatResetTime(sessionRateLimit.resetEpoch);
+  }
+}
 
 /**
  * Read repo query or hash from current location.
@@ -59,7 +75,7 @@ function syncUrlWithRepo(repoFullName) {
 export function showLanding(initialError = '') {
   currentRequestId++;
   syncUrlWithRepo('');
-  document.title = 'Repology — Understand the code. Find your way in.';
+  document.title = 'REPOLOGY // REPOSITORY_ORIENTATION_CONTROL_PLANE';
 
   renderLanding(appContainer, {
     initialValue: lastSearchedRepo,
@@ -87,28 +103,29 @@ export async function handleExplore(rawInput) {
   syncUrlWithRepo(fullName);
 
   // Update page title
-  document.title = `${fullName} — Repology Orientation`;
+  document.title = `${fullName.toUpperCase()} // REPOLOGY_TELEMETRY`;
 
   // Increment request ID to guard against out-of-order race conditions (QA-18)
   const thisRequestId = ++currentRequestId;
 
-  // 2. Render accessible loading state
-  renderLoadingSkeleton(appContainer, `Connecting to GitHub for ${fullName}...`);
+  // 2. Render accessible radar loading state
+  renderLoadingSkeleton(appContainer, `PROBING_GITHUB_API [TARGET: ${fullName}]...`);
 
   // 3. Fetch data via orchestrator
   const result = await analyzeRepository(owner, repo, (progress) => {
-    // Only update progress if this request is still active
     if (thisRequestId === currentRequestId) {
       const statusEl = appContainer.querySelector('.loading-status-text');
       if (statusEl) {
-        statusEl.textContent = progress.message;
+        statusEl.textContent = `> ${progress.message.toUpperCase()}`;
       }
     }
   });
 
+  // Sync header rate quota telemetry
+  updateHeaderTelemetry();
+
   // Check if user started another request while this was in-flight
   if (thisRequestId !== currentRequestId) {
-    // Discard stale result
     return;
   }
 
@@ -141,6 +158,22 @@ function init() {
     });
   }
 
+  // Keyboard shortcut listeners (ESC to return home, ⌘K to search)
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      showLanding();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      const input = document.getElementById('repo-url-input');
+      if (input) {
+        input.focus();
+        input.select();
+      } else {
+        showLanding();
+      }
+    }
+  });
+
   // Handle browser back/forward navigation
   window.addEventListener('popstate', () => {
     const repoFromUrl = getRepoFromUrl();
@@ -160,7 +193,6 @@ function init() {
   }
 }
 
-// Start application
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
