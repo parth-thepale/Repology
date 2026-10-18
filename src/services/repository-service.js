@@ -7,6 +7,7 @@
 import { githubFetch } from './github-api.js';
 import { detectProject } from '../core/detect-project.js';
 import { generateSetupGuides } from '../core/setup-guides.js';
+import { explainRepository } from '../core/repo-explainer.js';
 
 /**
  * Base64 decoder helper for browsers and environments.
@@ -144,7 +145,12 @@ export function calculatePulse(metadata) {
  * @returns {string}
  */
 export function generateMarkdownReport(data) {
-  const { owner, repo, metadata, defaultBranch, detection, setupGuides, pulse } = data;
+  const { owner, repo, metadata, defaultBranch, detection, setupGuides, pulse, explainer } = data;
+  const featuresMd =
+    explainer?.features?.length > 0
+      ? `\n### Core Capabilities\n${explainer.features.map((f) => `- ${f}`).join('\n')}\n`
+      : '';
+
   return `# Repology Orientation Telemetry: ${owner}/${repo}
 *Generated at ${new Date().toISOString()} via Repology Control Plane*
 
@@ -152,9 +158,16 @@ export function generateMarkdownReport(data) {
 - **Repository:** https://github.com/${owner}/${repo}
 - **Primary Language:** ${metadata.language || 'Unknown'}
 - **Default Branch:** \`${defaultBranch}\`
+- **Project Classification:** ${explainer?.projectType?.label || 'General Codebase'}
 - **Stars / Forks:** ${metadata.stargazers_count} ⭐ / ${metadata.forks_count} 🍴
 - **Velocity Pulse:** ${pulse?.label || 'ACTIVE'} (Last push: ${pulse?.relativePush || 'Recent'})
 - **License:** ${metadata.license?.spdx_id || 'None declared'}
+
+## System Mission & Functionality
+> ${explainer?.overviewExplanation || explainer?.elevatorPitch || metadata.description || 'Open-source software repository.'}
+${featuresMd}
+## Codebase Navigation Guide
+- **Where to Start Reading:** \`${explainer?.entryPoint?.path || 'README.md'}\` (${explainer?.entryPoint?.reason || 'Primary repository entry point'})
 
 ## Ecosystem & Manifest Evidence
 - **Detected Ecosystems:** ${detection.ecosystems.join(', ') || 'None recognized'}
@@ -194,6 +207,7 @@ export function generateJsonReport(data) {
       setupGuides: data.setupGuides,
       pulse: data.pulse,
       languages: data.languages,
+      explainer: data.explainer,
     },
     null,
     2
@@ -280,6 +294,17 @@ export async function analyzeRepository(owner, repo, onProgress) {
     defaultBranch,
   });
 
+  // 6. Generate plain-English functionality explainer & codebase anatomy
+  const explainer = explainRepository({
+    metadata,
+    readmeText,
+    contents,
+    packageJsonContent,
+    owner,
+    repo,
+    defaultBranch,
+  });
+
   const pulse = calculatePulse(metadata);
   const isPartial = Boolean(contentsError || readmeError);
 
@@ -298,6 +323,7 @@ export async function analyzeRepository(owner, repo, onProgress) {
       setupGuides,
       languages,
       pulse,
+      explainer,
       isPartial,
       isCacheHit,
     },

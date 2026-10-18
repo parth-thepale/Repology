@@ -679,6 +679,269 @@
 }
 
 /* ==========================================================================
+   Functionality Explainer & Architectural Anatomy
+   ========================================================================== */
+
+.explainer-hero-card {
+  background-color: var(--bg-surface-1);
+  border-bottom: 1px solid var(--border-default);
+  padding: 1.5rem;
+}
+
+.explainer-headline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.explainer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.explainer-section-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.explainer-pitch {
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: #EDEDED;
+  margin-bottom: 1.25rem;
+  background-color: #050505;
+  border-left: 2px solid var(--border-accent);
+  padding: 0.85rem 1.15rem;
+}
+
+.explainer-capabilities-heading {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.explainer-features-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .explainer-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .explainer-features-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.feature-chip {
+  background-color: #070707;
+  border: 1px solid var(--border-subtle);
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  transition: border-color var(--duration-snap) var(--ease-mechanical);
+}
+
+.feature-chip:hover {
+  border-color: var(--border-default);
+  background-color: #0C0C0C;
+}
+
+.feature-bullet {
+  font-family: var(--font-mono);
+  color: var(--color-nominal);
+  font-size: 11px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.feature-text {
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: #D4D4D4;
+}
+
+/* Codebase Anatomy & Entry Point Grid */
+.anatomy-bento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background-color: var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+}
+
+@media (min-width: 900px) {
+  .anatomy-bento-grid {
+    grid-template-columns: 1fr 1.35fr;
+  }
+}
+
+.anatomy-block {
+  background-color: var(--bg-surface-1);
+  padding: 1.25rem;
+}
+
+.anatomy-block-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #F5F5F5;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.entry-point-card {
+  background-color: #050505;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--color-nominal);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.entry-target-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.entry-target-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: #FFFFFF;
+  font-weight: 600;
+  background-color: #111111;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border-default);
+}
+
+.entry-reason-text {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Directory Map Blueprint Table */
+.directory-anatomy-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.directory-anatomy-table tr {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.directory-anatomy-table tr:hover {
+  background-color: #0A0A0A;
+}
+
+.directory-anatomy-table td {
+  padding: 0.45rem 0.5rem;
+  font-size: var(--text-xs);
+  vertical-align: middle;
+}
+
+.dir-cell-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  white-space: nowrap;
+  width: 25%;
+}
+
+.dir-cell-name a {
+  color: #EDEDED;
+  text-decoration: none;
+}
+
+.dir-cell-name a:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+.dir-cell-badge {
+  width: 20%;
+  white-space: nowrap;
+}
+
+.dir-cell-purpose {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* Tech Stack & Dependencies Strip */
+.deps-strip-block {
+  background-color: var(--bg-surface-1);
+  border-bottom: 1px solid var(--border-default);
+  padding: 1rem 1.25rem;
+}
+
+.deps-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deps-group + .deps-group {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.deps-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.deps-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dep-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background-color: #080808;
+  border: 1px solid var(--border-subtle);
+  color: #A3A3A3;
+  padding: 0.15rem 0.5rem;
+}
+
+.dep-tag-runtime {
+  border-color: #2E2E2E;
+  color: #E5E5E5;
+}
+
+/* ==========================================================================
    Root File Directory Tree (High-Density Table)
    ========================================================================== */
 

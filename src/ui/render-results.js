@@ -6,6 +6,7 @@
 
 import { formatCompactNumber, formatNullable, formatDate } from '../core/formatters.js';
 import { generateMarkdownReport, generateJsonReport } from '../services/repository-service.js';
+import { explainRepository } from '../core/repo-explainer.js';
 import { renderFiles } from './render-files.js';
 import { renderReadme } from './render-readme.js';
 import { renderSetup } from './render-setup.js';
@@ -65,6 +66,16 @@ export function renderResults(container, { data, onChangeRepo }) {
     setupGuides,
     languages = {},
     pulse,
+    explainer = data.explainer ||
+      explainRepository({
+        metadata,
+        readmeText,
+        contents,
+        packageJsonContent: null,
+        owner,
+        repo,
+        defaultBranch,
+      }),
     isPartial,
     isCacheHit,
     isDemo,
@@ -227,7 +238,7 @@ export function renderResults(container, { data, onChangeRepo }) {
   switchboard.setAttribute('role', 'tablist');
 
   const tabs = [
-    { id: 'overview', label: '01 // OVERVIEW_MATRIX', badge: '' },
+    { id: 'overview', label: '01 // OVERVIEW_&_EXPLAINER', badge: '[EXPLAINED]' },
     { id: 'files', label: '02 // ROOT_TREE', badge: `[${contents.length}]` },
     { id: 'setup', label: '03 // SETUP_SIGNALS', badge: `[${setupGuides.length}]` },
     { id: 'readme', label: '04 // README_TERMINAL', badge: readmeText ? '[OK]' : '[NONE]' },
@@ -268,7 +279,7 @@ export function renderResults(container, { data, onChangeRepo }) {
   const panelsContainer = document.createElement('div');
   panelsContainer.className = 'panels-container';
 
-  // --- Panel 1: Overview Matrix with Velocity & Composition Bento ---
+  // --- Panel 1: Overview Matrix with Functionality Explainer & Architecture ---
   const overviewPanel = document.createElement('div');
   overviewPanel.id = 'panel-overview';
   overviewPanel.role = 'tabpanel';
@@ -279,14 +290,157 @@ export function renderResults(container, { data, onChangeRepo }) {
   ovHeader.className = 'panel-header-bar';
   ovHeader.innerHTML = `
     <div class="panel-header-left">
-      <span class="panel-id-label">MODULE // 01_OVERVIEW_MATRIX</span>
+      <span class="panel-id-label">MODULE // 01_OVERVIEW_&_EXPLAINER</span>
       <span class="badge-tag" style="color: ${pulse?.color || '#10B981'};">[CADENCE: ${pulse?.label || 'ACTIVE'}]</span>
+      <span class="badge-tag">${explainer.projectType?.badge || '[TYPE: GENERAL_REPOSITORY]'}</span>
     </div>
     <div class="panel-header-right">
       <span class="badge-tag">[KEYBINDS_ACTIVE: 1-5]</span>
     </div>
   `;
   overviewPanel.appendChild(ovHeader);
+
+  // 1. Executive Functionality Explainer Hero Card
+  const explainerCard = document.createElement('div');
+  explainerCard.className = 'explainer-hero-card';
+
+  const headlineRow = document.createElement('div');
+  headlineRow.className = 'explainer-headline-row';
+  headlineRow.innerHTML = `
+    <div class="explainer-title-group">
+      <span class="explainer-section-label">SYSTEM_MISSION // PLAIN_ENGLISH_EXPLANATION</span>
+      <span class="badge-tag badge-tag-nominal"><span class="badge-led"></span>SOURCE_GROUNDED</span>
+    </div>
+    <span class="badge-tag badge-tag-info">${explainer.projectType?.label || 'Software Repository'}</span>
+  `;
+  explainerCard.appendChild(headlineRow);
+
+  const pitchPara = document.createElement('p');
+  pitchPara.className = 'explainer-pitch';
+  pitchPara.textContent =
+    explainer.overviewExplanation ||
+    explainer.elevatorPitch ||
+    metadata.description ||
+    'Open-source software repository.';
+  explainerCard.appendChild(pitchPara);
+
+  // Feature Capabilities Grid (if features extracted)
+  if (explainer.features && explainer.features.length > 0) {
+    const featHeader = document.createElement('div');
+    featHeader.className = 'explainer-capabilities-heading';
+    featHeader.innerHTML = `<span>CORE_CAPABILITIES & HIGHLIGHTS</span> <span class="badge-tag">[${explainer.features.length}_EXTRACTED]</span>`;
+    explainerCard.appendChild(featHeader);
+
+    const featGrid = document.createElement('div');
+    featGrid.className = 'explainer-features-grid';
+    explainer.features.forEach((feat) => {
+      const chip = document.createElement('div');
+      chip.className = 'feature-chip';
+      chip.innerHTML = `
+        <span class="feature-bullet">▸</span>
+        <span class="feature-text">${feat}</span>
+      `;
+      featGrid.appendChild(chip);
+    });
+    explainerCard.appendChild(featGrid);
+  }
+  overviewPanel.appendChild(explainerCard);
+
+  // 2. Codebase Anatomy & Navigation Blueprint
+  const anatomyBento = document.createElement('div');
+  anatomyBento.className = 'anatomy-bento-grid';
+
+  // Left Cell: Where to start reading code
+  const entryBlock = document.createElement('div');
+  entryBlock.className = 'anatomy-block';
+  entryBlock.innerHTML = `
+    <div class="anatomy-block-title">
+      <span>WHERE_TO_START_READING</span>
+      <span class="badge-tag badge-tag-nominal">START_HERE</span>
+    </div>
+    <div class="entry-point-card">
+      <div class="entry-target-row">
+        <code class="entry-target-code">${explainer.entryPoint?.path || 'README.md'}</code>
+        <a href="${explainer.entryPoint?.url || metadata.html_url || '#'}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+          OPEN_IN_GITHUB ↗
+        </a>
+      </div>
+      <p class="entry-reason-text">${explainer.entryPoint?.reason || 'Primary repository entry point.'}</p>
+    </div>
+  `;
+  anatomyBento.appendChild(entryBlock);
+
+  // Right Cell: Directory Map Table
+  const dirBlock = document.createElement('div');
+  dirBlock.className = 'anatomy-block';
+  let dirRowsHtml = '';
+  if (explainer.directoryAnatomy && explainer.directoryAnatomy.length > 0) {
+    dirRowsHtml = `
+      <table class="directory-anatomy-table">
+        <tbody>
+          ${explainer.directoryAnatomy
+            .map(
+              (d) => `
+            <tr>
+              <td class="dir-cell-name">
+                <a href="${d.url}" target="_blank" rel="noopener noreferrer">📁 ${d.name}/</a>
+              </td>
+              <td class="dir-cell-badge">
+                <span class="badge-tag">${d.badge}</span>
+              </td>
+              <td class="dir-cell-purpose">${d.purpose}</td>
+            </tr>
+          `
+            )
+            .join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    dirRowsHtml = '<p style="color: var(--text-muted); font-size: 11px;">Flat root structure. No top-level directories detected.</p>';
+  }
+
+  dirBlock.innerHTML = `
+    <div class="anatomy-block-title">
+      <span>ROOT_DIRECTORY_ANATOMY</span>
+      <span class="badge-tag">[${explainer.directoryAnatomy?.length || 0}_DIRS]</span>
+    </div>
+    ${dirRowsHtml}
+  `;
+  anatomyBento.appendChild(dirBlock);
+  overviewPanel.appendChild(anatomyBento);
+
+  // 3. Dependencies & Toolchain (if present)
+  if (
+    (explainer.runtimeDeps && explainer.runtimeDeps.length > 0) ||
+    (explainer.devToolchain && explainer.devToolchain.length > 0)
+  ) {
+    const depsBlock = document.createElement('div');
+    depsBlock.className = 'deps-strip-block';
+    let depsHtml = '';
+    if (explainer.runtimeDeps && explainer.runtimeDeps.length > 0) {
+      depsHtml += `
+        <div class="deps-group">
+          <span class="deps-label">RUNTIME_DEPENDENCIES:</span>
+          <div class="deps-tags-list">
+            ${explainer.runtimeDeps.map((d) => `<span class="dep-tag dep-tag-runtime">${d}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+    if (explainer.devToolchain && explainer.devToolchain.length > 0) {
+      depsHtml += `
+        <div class="deps-group">
+          <span class="deps-label">DEVELOPER_TOOLCHAIN:</span>
+          <div class="deps-tags-list">
+            ${explainer.devToolchain.map((d) => `<span class="dep-tag">${d}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+    depsBlock.innerHTML = depsHtml;
+    overviewPanel.appendChild(depsBlock);
+  }
 
   // Bento Split Grid
   const overviewGrid = document.createElement('div');
