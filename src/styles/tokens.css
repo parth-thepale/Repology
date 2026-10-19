@@ -56,7 +56,10 @@
   --text-xl: 1.375rem;   /* 22px */
   --text-2xl: 1.75rem;   /* 28px */
   --text-3xl: 2.25rem;   /* 36px */
-  --text-hero: clamp(2rem, 4.5vw, 3.5rem);
+  --text-hero: clamp(1.65rem, 5vw, 3.25rem);
+
+  /* Touch & Tap Target Standards (Accessible 44px Minimum) */
+  --touch-target-min: 44px;
 
   /* Geometry & Radius (Strict Industrial / 2px max) */
   --radius-none: 0px;

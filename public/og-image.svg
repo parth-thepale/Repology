@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <!-- Pitch Black Base Canvas -->
+  <rect width="1200" height="630" fill="#000000"/>
+
+  <!-- Blueprint Dot Matrix Grid Background -->
+  <defs>
+    <pattern id="grid-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#1C1C1C"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid-dots)"/>
+
+  <!-- Structural 1px Blueprint Hairline Outer Frame -->
+  <rect x="40" y="40" width="1120" height="550" fill="#050505" stroke="#222222" stroke-width="1"/>
+
+  <!-- Header Coordinate Bar -->
+  <line x1="40" y1="100" x2="1160" y2="100" stroke="#222222" stroke-width="1"/>
+  <rect x="64" y="62" width="8" height="8" fill="#10B981"/>
+  <text x="82" y="72" fill="#F5F5F5" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="14" font-weight="700" letter-spacing="0.1em">REPOLOGY // RADAR_ORIENTATION_CONTROL_PLANE</text>
+  <text x="960" y="72" fill="#525252" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12" letter-spacing="0.08em">[SYS_GRID: 1440px / AIRGAPPED]</text>
+
+  <!-- Left Main Column: Headline & Value Proposition -->
+  <g transform="translate(64, 160)">
+    <!-- Status Pill -->
+    <rect x="0" y="0" width="180" height="28" fill="#0D0D0D" stroke="#222222" stroke-width="1"/>
+    <circle cx="14" cy="14" r="3.5" fill="#10B981"/>
+    <text x="26" y="19" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" letter-spacing="0.06em">ACTIVE_TELEMETRY</text>
+
+    <!-- Main Headline -->
+    <text x="0" y="80" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" letter-spacing="-0.03em">Every repository has a story.</text>
+    <text x="0" y="132" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" letter-spacing="-0.03em">Understand it before you code.</text>
+
+    <!-- Subtitle -->
+    <text x="0" y="180" fill="#9E9E9E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400">
+      High-density GitHub orientation radar: tech stack detection,
+    </text>
+    <text x="0" y="210" fill="#9E9E9E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400">
+      honest setup commands, and codebase navigation blueprints.
+    </text>
+
+    <!-- Feature Tags -->
+    <g transform="translate(0, 260)">
+      <rect x="0" y="0" width="160" height="36" fill="#0A0A0A" stroke="#262626" stroke-width="1"/>
+      <text x="14" y="23" fill="#E5E5E5" font-family="'JetBrains Mono', monospace" font-size="12">[01_TECH_STACK]</text>
+
+      <rect x="175" y="0" width="165" height="36" fill="#0A0A0A" stroke="#262626" stroke-width="1"/>
+      <text x="189" y="23" fill="#E5E5E5" font-family="'JetBrains Mono', monospace" font-size="12">[02_SETUP_SIGNALS]</text>
+
+      <rect x="355" y="0" width="165" height="36" fill="#0A0A0A" stroke="#262626" stroke-width="1"/>
+      <text x="369" y="23" fill="#E5E5E5" font-family="'JetBrains Mono', monospace" font-size="12">[03_CODE_ANATOMY]</text>
+
+      <rect x="535" y="0" width="165" height="36" fill="#0A0A0A" stroke="#262626" stroke-width="1"/>
+      <text x="549" y="23" fill="#E5E5E5" font-family="'JetBrains Mono', monospace" font-size="12">[04_AIRGAP_SECURE]</text>
+    </g>
+  </g>
+
+  <!-- Right Graphic: Precision Hardware Radar Reticle -->
+  <g transform="translate(920, 310)">
+    <!-- Outer concentric radar rings -->
+    <circle cx="0" cy="0" r="140" fill="none" stroke="#1F1F1F" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="105" fill="none" stroke="#242424" stroke-width="1" stroke-dasharray="4 4"/>
+    <circle cx="0" cy="0" r="70" fill="none" stroke="#292929" stroke-width="1"/>
+    <circle cx="0" cy="0" r="35" fill="none" stroke="#333333" stroke-width="1"/>
+
+    <!-- Crosshair axes -->
+    <line x1="-155" y1="0" x2="155" y2="0" stroke="#262626" stroke-width="1"/>
+    <line x1="0" y1="-155" x2="0" y2="155" stroke="#262626" stroke-width="1"/>
+
+    <!-- Radar Sweep Beam -->
+    <path d="M 0 0 L 120 -70 A 140 140 0 0 0 70 -120 Z" fill="#10B981" fill-opacity="0.12"/>
+    <line x1="0" y1="0" x2="120" y2="-70" stroke="#10B981" stroke-width="2"/>
+
+    <!-- Telemetry Targets -->
+    <rect x="45" y="-55" width="6" height="6" fill="#10B981"/>
+    <rect x="-60" y="35" width="5" height="5" fill="#3B82F6"/>
+    <rect x="75" y="60" width="5" height="5" fill="#F59E0B"/>
+    <circle cx="0" cy="0" r="3" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Bottom Blueprint Footer -->
+  <line x1="40" y1="530" x2="1160" y2="530" stroke="#222222" stroke-width="1"/>
+  <text x="64" y="562" fill="#525252" font-family="'JetBrains Mono', monospace" font-size="12">
+    HOSTED AT: REPOLOGY.VERCEL.APP • ZERO CODE EXECUTION • READ-ONLY REST API TELEMETRY
+  </text>
+  <text x="1000" y="562" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600">
+    STATUS: ONLINE [v0.1.0]
+  </text>
+</svg>

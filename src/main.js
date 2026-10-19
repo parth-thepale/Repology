@@ -24,7 +24,7 @@ import { renderLanding } from './ui/render-landing.js';
 import { renderResults } from './ui/render-results.js';
 import { renderLoadingSkeleton, renderErrorState } from './ui/render-states.js';
 
-const appContainer = document.getElementById('app');
+const getAppContainer = () => document.getElementById('app');
 
 let currentRequestId = 0;
 let lastSearchedRepo = '';
@@ -99,13 +99,64 @@ function syncUrlWithRepo(repoFullName) {
 }
 
 /**
+ * Synchronize document title, meta description, and OpenGraph tags dynamically for SEO.
+ * @param {object} params
+ */
+export function updateSeoMeta({ title, description, canonicalUrl, ogTitle, ogDescription }) {
+  if (title) {
+    document.title = title;
+  }
+
+  const descMeta = document.querySelector('meta[name="description"]');
+  if (descMeta && description) {
+    descMeta.setAttribute('content', description);
+  }
+
+  const ogTitleMeta = document.querySelector('meta[property="og:title"]');
+  if (ogTitleMeta && (ogTitle || title)) {
+    ogTitleMeta.setAttribute('content', ogTitle || title);
+  }
+
+  const ogDescMeta = document.querySelector('meta[property="og:description"]');
+  if (ogDescMeta && (ogDescription || description)) {
+    ogDescMeta.setAttribute('content', ogDescription || description);
+  }
+
+  const twitterTitleMeta = document.querySelector('meta[name="twitter:title"]');
+  if (twitterTitleMeta && (ogTitle || title)) {
+    twitterTitleMeta.setAttribute('content', ogTitle || title);
+  }
+
+  const twitterDescMeta = document.querySelector('meta[name="twitter:description"]');
+  if (twitterDescMeta && (ogDescription || description)) {
+    twitterDescMeta.setAttribute('content', ogDescription || description);
+  }
+
+  const canonicalLink = document.querySelector('link[rel="canonical"]');
+  if (canonicalLink && canonicalUrl) {
+    canonicalLink.setAttribute('href', canonicalUrl);
+  }
+}
+
+/**
  * Transition to Landing view.
  * @param {string} [initialError='']
  */
 export function showLanding(initialError = '') {
   currentRequestId++;
   syncUrlWithRepo('');
-  document.title = 'REPOLOGY // REPOSITORY_ORIENTATION_CONTROL_PLANE';
+  updateSeoMeta({
+    title: 'REPOLOGY // REPOSITORY_ORIENTATION_CONTROL_PLANE',
+    description:
+      'High-density industrial orientation control plane for public GitHub repositories. Instant plain-English functionality explanations, verified manifests, setup signals, file tree architecture, and safe contribution vectors.',
+    canonicalUrl: 'https://repology.vercel.app/',
+    ogTitle: 'REPOLOGY // REPOSITORY_ORIENTATION_CONTROL_PLANE',
+    ogDescription:
+      'Every repository has a story. Understand it before you open the code. High-density GitHub orientation radar.',
+  });
+
+  const appContainer = getAppContainer();
+  if (!appContainer) return;
 
   renderLanding(appContainer, {
     initialValue: lastSearchedRepo,
@@ -126,7 +177,14 @@ export function handleLoadDemo() {
   currentRequestId++;
   lastSearchedRepo = `${DEMO_SNAPSHOT.owner}/${DEMO_SNAPSHOT.repo}`;
   syncUrlWithRepo(lastSearchedRepo);
-  document.title = `${lastSearchedRepo.toUpperCase()} // DEMO_TELEMETRY`;
+  updateSeoMeta({
+    title: `${lastSearchedRepo.toUpperCase()} // DEMO_TELEMETRY // REPOLOGY`,
+    description: `Explore ${lastSearchedRepo} on Repology: Next generation frontend tooling. Verified tech stack, package manager, and honest setup commands.`,
+    canonicalUrl: `https://repology.vercel.app/?target=${lastSearchedRepo}`,
+  });
+
+  const appContainer = getAppContainer();
+  if (!appContainer) return;
 
   renderResults(appContainer, {
     data: DEMO_SNAPSHOT,
@@ -150,8 +208,15 @@ export async function handleExplore(rawInput) {
   lastSearchedRepo = fullName;
   syncUrlWithRepo(fullName);
 
-  // Update page title
-  document.title = `${fullName.toUpperCase()} // REPOLOGY_TELEMETRY`;
+  // Update initial page title & meta for loading phase
+  updateSeoMeta({
+    title: `${fullName.toUpperCase()} // PROBING_TELEMETRY // REPOLOGY`,
+    description: `Probing repository ${fullName} for architecture, manifests, and setup signals.`,
+    canonicalUrl: `https://repology.vercel.app/?target=${fullName}`,
+  });
+
+  const appContainer = getAppContainer();
+  if (!appContainer) return;
 
   // Increment request ID to guard against out-of-order race conditions (QA-18)
   const thisRequestId = ++currentRequestId;
@@ -186,6 +251,20 @@ export async function handleExplore(rawInput) {
     });
     return;
   }
+
+  // Update SEO metadata dynamically with analyzed repository facts
+  const repoDesc =
+    result.data.explainer?.overviewExplanation ||
+    result.data.metadata?.description ||
+    `Explore ${fullName} repository architecture, setup guides, and telemetry on Repology.`;
+
+  updateSeoMeta({
+    title: `${fullName.toUpperCase()} // REPOLOGY_TELEMETRY`,
+    description: repoDesc.length > 200 ? repoDesc.slice(0, 197) + '...' : repoDesc,
+    canonicalUrl: `https://repology.vercel.app/?target=${fullName}`,
+    ogTitle: `${fullName} // Repository Orientation Telemetry`,
+    ogDescription: repoDesc.length > 200 ? repoDesc.slice(0, 197) + '...' : repoDesc,
+  });
 
   renderResults(appContainer, {
     data: result.data,
@@ -239,6 +318,9 @@ function setupTokenDialog() {
  * Initialize app on page load
  */
 function init() {
+  const appContainer = getAppContainer();
+  if (!appContainer) return;
+
   // Brand header logo click returns to landing
   const brandLink = document.getElementById('brand-home-link');
   if (brandLink) {
