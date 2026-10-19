@@ -11,6 +11,8 @@ import { renderFiles } from './render-files.js';
 import { renderReadme } from './render-readme.js';
 import { renderSetup } from './render-setup.js';
 import { renderContribute } from './render-contribute.js';
+import { renderEnv } from './render-env.js';
+import { renderDependencies } from './render-dependencies.js';
 import { renderPartialAlert } from './render-states.js';
 
 /**
@@ -79,6 +81,8 @@ export function renderResults(container, { data, onChangeRepo }) {
     isPartial,
     isCacheHit,
     isDemo,
+    envData = data.envData || { hasEnvFile: false, entries: [] },
+    depData = data.depData || { hasManifest: false, totalCount: 0 },
   } = data;
 
   const resultsConsole = document.createElement('div');
@@ -230,6 +234,72 @@ export function renderResults(container, { data, onChangeRepo }) {
     <div class="tele-node"><span class="tele-key">LAST_PUSH:</span><span class="tele-val">${lastUpdated}</span></div>
   `;
   flightDeck.appendChild(teleStrip);
+
+  // 3b. Instant Cloud Launchpad & Quick Clone Strip
+  const launchpadStrip = document.createElement('div');
+  launchpadStrip.className = 'deck-launchpad-strip';
+
+  const launchGroup = document.createElement('div');
+  launchGroup.className = 'launchpad-actions';
+  launchGroup.innerHTML = `
+    <span class="launchpad-label">QUICK_LAUNCH:</span>
+    <a href="https://codespaces.new/${owner}/${repo}" target="_blank" rel="noopener noreferrer" class="launch-chip" title="Launch instant cloud environment in GitHub Codespaces">CODESPACES ↗</a>
+    <a href="https://gitpod.io/#https://github.com/${owner}/${repo}" target="_blank" rel="noopener noreferrer" class="launch-chip" title="Launch instant container in Gitpod">GITPOD ↗</a>
+    <a href="https://stackblitz.com/github/${owner}/${repo}" target="_blank" rel="noopener noreferrer" class="launch-chip" title="Launch web sandbox in StackBlitz">STACKBLITZ ↗</a>
+    <a href="https://github.dev/${owner}/${repo}" target="_blank" rel="noopener noreferrer" class="launch-chip" title="Open in GitHub.dev Web Editor">GITHUB.DEV ↗</a>
+    <a href="vscode://vscode.git/clone?url=https://github.com/${owner}/${repo}.git" class="launch-chip" title="Clone directly into local VS Code">VS_CODE ↗</a>
+  `;
+
+  const cloneGroup = document.createElement('div');
+  cloneGroup.className = 'clone-actions';
+
+  const cloneCommands = {
+    https: `git clone https://github.com/${owner}/${repo}.git`,
+    ssh: `git clone git@github.com:${owner}/${repo}.git`,
+    cli: `gh repo clone ${owner}/${repo}`,
+  };
+
+  cloneGroup.innerHTML = `
+    <div class="clone-protocol-toggles" role="group" aria-label="Clone protocol selection">
+      <button type="button" class="clone-proto-btn active" data-proto="https">HTTPS</button>
+      <button type="button" class="clone-proto-btn" data-proto="ssh">SSH</button>
+      <button type="button" class="clone-proto-btn" data-proto="cli">GH_CLI</button>
+    </div>
+    <div class="clone-input-wrap">
+      <code class="clone-cmd-text" id="clone-cmd-display">${cloneCommands.https}</code>
+      <button type="button" class="btn-copy-clone" id="btn-copy-clone-cmd" title="Copy git clone command to clipboard">[COPY]</button>
+    </div>
+  `;
+
+  let activeProto = 'https';
+  const protoButtons = cloneGroup.querySelectorAll('.clone-proto-btn');
+  const cmdDisplay = cloneGroup.querySelector('#clone-cmd-display');
+  const copyCloneBtn = cloneGroup.querySelector('#btn-copy-clone-cmd');
+
+  protoButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      protoButtons.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeProto = btn.getAttribute('data-proto');
+      if (cmdDisplay) cmdDisplay.textContent = cloneCommands[activeProto];
+    });
+  });
+
+  copyCloneBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(cloneCommands[activeProto]);
+      copyCloneBtn.textContent = '[COPIED ✓]';
+      setTimeout(() => {
+        copyCloneBtn.textContent = '[COPY]';
+      }, 2000);
+    } catch {
+      copyCloneBtn.textContent = '[FAIL]';
+    }
+  });
+
+  launchpadStrip.appendChild(launchGroup);
+  launchpadStrip.appendChild(cloneGroup);
+  flightDeck.appendChild(launchpadStrip);
   resultsConsole.appendChild(flightDeck);
 
   // 4. Hardware Switchboard Tab Navigation
@@ -237,12 +307,17 @@ export function renderResults(container, { data, onChangeRepo }) {
   switchboard.className = 'switchboard-nav';
   switchboard.setAttribute('role', 'tablist');
 
+  const envCount = envData.totalCount || 0;
+  const depCount = depData.totalCount || 0;
+
   const tabs = [
     { id: 'overview', label: '01 // OVERVIEW_&_EXPLAINER', badge: '[EXPLAINED]' },
     { id: 'files', label: '02 // ROOT_TREE', badge: `[${contents.length}]` },
     { id: 'setup', label: '03 // SETUP_SIGNALS', badge: `[${setupGuides.length}]` },
     { id: 'readme', label: '04 // README_TERMINAL', badge: readmeText ? '[OK]' : '[NONE]' },
     { id: 'contribute', label: '05 // CONTRIBUTE_VECTORS', badge: '' },
+    { id: 'env', label: '06 // ENV_&_CONFIG', badge: `[${envCount}]` },
+    { id: 'deps', label: '07 // DEPENDENCIES', badge: `[${depCount}]` },
   ];
 
   const panels = {};
@@ -634,6 +709,34 @@ export function renderResults(container, { data, onChangeRepo }) {
   });
   panelsContainer.appendChild(contributePanel);
   panels['contribute'] = contributePanel;
+
+  // --- Panel 6: Environment & Configuration Radar ---
+  const envPanel = document.createElement('div');
+  envPanel.id = 'panel-env';
+  envPanel.role = 'tabpanel';
+  envPanel.setAttribute('aria-labelledby', 'tab-env');
+  envPanel.style.display = 'none';
+  renderEnv(envPanel, {
+    envData,
+    owner,
+    repo,
+  });
+  panelsContainer.appendChild(envPanel);
+  panels['env'] = envPanel;
+
+  // --- Panel 7: Dependency & Supply Chain Audit ---
+  const depsPanel = document.createElement('div');
+  depsPanel.id = 'panel-deps';
+  depsPanel.role = 'tabpanel';
+  depsPanel.setAttribute('aria-labelledby', 'tab-deps');
+  depsPanel.style.display = 'none';
+  renderDependencies(depsPanel, {
+    depData,
+    owner,
+    repo,
+  });
+  panelsContainer.appendChild(depsPanel);
+  panels['deps'] = depsPanel;
 
   resultsConsole.appendChild(panelsContainer);
   container.appendChild(resultsConsole);

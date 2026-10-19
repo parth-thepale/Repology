@@ -8,6 +8,13 @@ import { githubFetch } from './github-api.js';
 import { detectProject } from '../core/detect-project.js';
 import { generateSetupGuides } from '../core/setup-guides.js';
 import { explainRepository } from '../core/repo-explainer.js';
+import {
+  ENV_FILE_CANDIDATES,
+  parseEnvFile,
+  extractReferencedEnvKeys,
+  inferEnvType,
+} from '../core/env-decoder.js';
+import { scanDependencies } from '../core/dependency-scanner.js';
 
 /**
  * Base64 decoder helper for browsers and environments.
@@ -145,11 +152,27 @@ export function calculatePulse(metadata) {
  * @returns {string}
  */
 export function generateMarkdownReport(data) {
-  const { owner, repo, metadata, defaultBranch, detection, setupGuides, pulse, explainer } = data;
+  const { owner, repo, metadata, defaultBranch, detection, setupGuides, pulse, explainer, envData, depData } = data;
   const featuresMd =
     explainer?.features?.length > 0
       ? `\n### Core Capabilities\n${explainer.features.map((f) => `- ${f}`).join('\n')}\n`
       : '';
+
+  const envMd = envData?.entries?.length > 0
+    ? `\n## Configuration & Environment Variables (${envData.fileName})\n` +
+      `- **Total Variables:** ${envData.totalCount} (${envData.secretCount} sensitive secrets)\n` +
+      envData.entries.slice(0, 15).map((e) => `- \`${e.key}\` [${e.type?.label || 'CONFIG'}]`).join('\n') +
+      '\n'
+    : '';
+
+  const depsMd = depData?.hasManifest
+    ? `\n## Dependency Architecture & Supply Chain\n` +
+      `- **Framework Signature:** ${depData.signatures?.framework || 'Vanilla / Standard'}\n` +
+      `- **Bundler / Compiler:** ${depData.signatures?.bundler || 'Standard Toolchain'}\n` +
+      `- **Test Runner:** ${depData.signatures?.testRunner || 'None declared'}\n` +
+      `- **Styling System:** ${depData.signatures?.styling || 'Native CSS / None'}\n` +
+      `- **Production Dependencies:** ${depData.prodCount} | **Dev Dependencies:** ${depData.devCount}\n`
+    : '';
 
   return `# Repology Orientation Telemetry: ${owner}/${repo}
 *Generated at ${new Date().toISOString()} via Repology Control Plane*
@@ -175,7 +198,7 @@ ${featuresMd}
 - **Lockfile / Package Manager:** ${detection.packageManager || (detection.hasConflictingLockfiles ? 'Conflicting lockfiles' : 'None')}
 - **CI / Workflows:** ${detection.hasCi ? 'Yes (.github/workflows)' : 'No'}
 - **Containerization:** ${detection.hasDocker ? 'Yes (Dockerfile/Compose)' : 'No'}
-
+${envMd}${depsMd}
 ## Verified Setup Guidance
 ${setupGuides
   .map(
@@ -208,6 +231,8 @@ export function generateJsonReport(data) {
       pulse: data.pulse,
       languages: data.languages,
       explainer: data.explainer,
+      env: data.envData,
+      dependencies: data.depData,
     },
     null,
     2
@@ -285,7 +310,39 @@ export async function analyzeRepository(owner, repo, onProgress) {
     }
   }
 
-  // 5. Generate setup guides & pulse
+  // 5. Scan for configuration templates (.env.example / .env.sample)
+  let envData = { hasEnvFile: false, fileName: '', entries: [], secretCount: 0, totalCount: 0 };
+  const envCandidate = contents.find((c) => ENV_FILE_CANDIDATES.includes(c.name));
+  if (envCandidate) {
+    onProgress?.({ phase: 'env', message: `Decoding configuration template (${envCandidate.name})...` });
+    const envRes = await getManifestContent(owner, repo, defaultBranch, envCandidate.name);
+    if (envRes.ok && typeof envRes.data === 'string') {
+      envData = parseEnvFile(envRes.data, envCandidate.name);
+    }
+  } else {
+    const referencedKeys = extractReferencedEnvKeys(packageJsonContent, readmeText);
+    if (referencedKeys.length > 0) {
+      envData = {
+        hasEnvFile: false,
+        fileName: '.env (Inferred from code & manifests)',
+        entries: referencedKeys.map((k) => ({
+          key: k,
+          value: '',
+          comment: 'Referenced in scripts or documentation',
+          type: inferEnvType(k, ''),
+          required: false,
+        })),
+        secretCount: referencedKeys.filter((k) => inferEnvType(k, '').isSecret).length,
+        totalCount: referencedKeys.length,
+        isInferred: true,
+      };
+    }
+  }
+
+  // 6. Scan dependencies & supply chain from package.json
+  const depData = scanDependencies(packageJsonContent);
+
+  // 7. Generate setup guides & pulse
   const setupGuides = generateSetupGuides({
     detection,
     packageJsonContent,
@@ -294,7 +351,7 @@ export async function analyzeRepository(owner, repo, onProgress) {
     defaultBranch,
   });
 
-  // 6. Generate plain-English functionality explainer & codebase anatomy
+  // 8. Generate plain-English functionality explainer & codebase anatomy
   const explainer = explainRepository({
     metadata,
     readmeText,
@@ -324,6 +381,8 @@ export async function analyzeRepository(owner, repo, onProgress) {
       languages,
       pulse,
       explainer,
+      envData,
+      depData,
       isPartial,
       isCacheHit,
     },

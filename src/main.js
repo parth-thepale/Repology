@@ -361,7 +361,7 @@ function init() {
         showLanding();
       }
     } else if (
-      ['1', '2', '3', '4', '5'].includes(e.key) &&
+      ['1', '2', '3', '4', '5', '6', '7'].includes(e.key) &&
       !isModalOpen &&
       document.activeElement?.tagName !== 'INPUT' &&
       document.activeElement?.tagName !== 'TEXTAREA'
@@ -372,6 +372,8 @@ function init() {
         '3': 'tab-setup',
         '4': 'tab-readme',
         '5': 'tab-contribute',
+        '6': 'tab-env',
+        '7': 'tab-deps',
       };
       const tabBtn = document.getElementById(tabMap[e.key]);
       if (tabBtn) {

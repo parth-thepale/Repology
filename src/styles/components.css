@@ -1729,3 +1729,580 @@
   }
 }
 
+/* ==========================================================================
+   Phase 1: Instant Cloud Launchpad & Quick Clone Strip
+   ========================================================================== */
+
+.deck-launchpad-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background-color: #040404;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.launchpad-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.launchpad-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-right: 0.25rem;
+}
+
+.launch-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 0.55rem;
+  background-color: #080808;
+  border: 1px solid var(--border-default);
+  color: #C0C0C0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all var(--duration-snap) var(--ease-mechanical);
+}
+
+.launch-chip:hover {
+  background-color: #141414;
+  border-color: #EDEDED;
+  color: #FFFFFF;
+}
+
+.clone-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.clone-protocol-toggles {
+  display: flex;
+  border: 1px solid var(--border-default);
+  background-color: #000000;
+}
+
+.clone-proto-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  transition: all var(--duration-snap) var(--ease-mechanical);
+}
+
+.clone-proto-btn:last-child {
+  border-right: none;
+}
+
+.clone-proto-btn.active {
+  background-color: #161616;
+  color: #FFFFFF;
+}
+
+.clone-proto-btn:hover:not(.active) {
+  color: #E0E0E0;
+  background-color: #0A0A0A;
+}
+
+.clone-input-wrap {
+  display: flex;
+  align-items: center;
+  background-color: #000000;
+  border: 1px solid var(--border-default);
+  padding: 0 0.5rem;
+  height: 28px;
+  gap: 0.5rem;
+}
+
+.clone-cmd-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #10B981;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-copy-clone {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  transition: color var(--duration-snap) var(--ease-mechanical);
+}
+
+.btn-copy-clone:hover {
+  color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+  .deck-launchpad-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .launchpad-actions {
+    width: 100%;
+  }
+  .launch-chip {
+    min-height: 38px;
+  }
+  .clone-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .clone-input-wrap {
+    width: 100%;
+    justify-content: space-between;
+    min-height: 38px;
+  }
+  .clone-cmd-text {
+    max-width: calc(100% - 60px);
+  }
+}
+
+/* ==========================================================================
+   Module 06: Environment & Configuration Radar
+   ========================================================================== */
+
+.env-console {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: var(--border-default);
+}
+
+.env-action-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.25rem;
+  background-color: var(--bg-surface-1);
+}
+
+.env-action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 680px;
+}
+
+.env-action-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.env-action-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.env-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.env-table-wrapper {
+  background-color: var(--bg-surface-1);
+  overflow-x: auto;
+}
+
+.env-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+
+.env-matrix-table th {
+  padding: 0.65rem 1rem;
+  background-color: #030303;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.env-matrix-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.env-matrix-table tr:hover td {
+  background-color: #0B0B0B;
+}
+
+.env-key-cell code {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.env-val-cell code {
+  color: #10B981;
+}
+
+.env-notes-cell {
+  max-width: 320px;
+  line-height: 1.4;
+  font-size: 11px;
+}
+
+.env-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: var(--bg-surface-1);
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.env-empty-icon {
+  font-size: 2rem;
+  color: var(--text-muted);
+}
+
+.env-empty-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+
+.env-empty-desc {
+  max-width: 520px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.env-empty-guidance {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #030303;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+  max-width: 480px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.env-guidance-heading {
+  font-weight: 700;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.env-empty-guidance ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.env-empty-guidance li {
+  margin-bottom: 0.35rem;
+}
+
+/* ==========================================================================
+   Module 07: Dependency & Supply Chain Audit
+   ========================================================================== */
+
+.dep-console {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: var(--border-default);
+}
+
+.dep-signatures-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background-color: var(--border-default);
+}
+
+.dep-sig-card {
+  background-color: var(--bg-surface-1);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dep-sig-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.dep-sig-val {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .dep-signatures-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .dep-signatures-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dep-clusters-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: var(--border-default);
+}
+
+.dep-cluster-card {
+  background-color: var(--bg-surface-1);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dep-cluster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dep-cluster-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+
+.dep-cluster-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dep-pkg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  background-color: #030303;
+  border: 1px solid var(--border-subtle);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: all var(--duration-snap) var(--ease-mechanical);
+}
+
+.dep-pkg-chip:hover {
+  border-color: #EDEDED;
+  background-color: #0E0E0E;
+}
+
+.pkg-name {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.pkg-ver {
+  color: #10B981;
+  font-size: 10px;
+}
+
+.pkg-scope-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0.05rem 0.25rem;
+  background-color: #1C1C1C;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.dep-table-section {
+  background-color: var(--bg-surface-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.dep-table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+  background-color: #030303;
+}
+
+.dep-table-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dep-table-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+
+.dep-search-box {
+  width: 280px;
+}
+
+.dep-search-input {
+  width: 100%;
+  height: 30px;
+  background-color: #000000;
+  border: 1px solid var(--border-default);
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 0.65rem;
+}
+
+.dep-search-input:focus {
+  border-color: var(--border-accent);
+  outline: none;
+}
+
+.dep-table-wrapper {
+  max-height: 480px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.dep-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+
+.dep-matrix-table th {
+  position: sticky;
+  top: 0;
+  background-color: #050505;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+  z-index: 2;
+}
+
+.dep-matrix-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.dep-matrix-table tr:hover td {
+  background-color: #0C0C0C;
+}
+
+.dep-registry-link {
+  color: #FFFFFF;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.dep-registry-link:hover {
+  color: #10B981;
+  text-decoration: underline;
+}
+
+.dep-version-cell code {
+  color: #E0E0E0;
+}
+
+.dep-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: var(--bg-surface-1);
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.dep-empty-icon {
+  font-size: 2rem;
+  color: var(--text-muted);
+}
+
+.dep-empty-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+
+.dep-empty-desc {
+  max-width: 520px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+

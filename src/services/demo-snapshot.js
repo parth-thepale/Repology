@@ -204,5 +204,104 @@ pnpm create vite
     runtimeDeps: [],
     devToolchain: ['esbuild', 'rollup', 'typescript', 'vitest'],
   },
+  envData: {
+    hasEnvFile: true,
+    fileName: '.env.example',
+    totalCount: 3,
+    secretCount: 1,
+    entries: [
+      {
+        key: 'PORT',
+        value: '5173',
+        comment: 'Local development server port',
+        type: { typeId: 'port', label: 'NETWORK_PORT', isSecret: false, badgeClass: 'badge-tag-nominal' },
+        required: false,
+      },
+      {
+        key: 'VITE_API_ENDPOINT',
+        value: 'http://localhost:3000/api',
+        comment: 'Target backend API endpoint',
+        type: { typeId: 'url', label: 'NETWORK_ENDPOINT', isSecret: false, badgeClass: 'badge-tag-info' },
+        required: true,
+      },
+      {
+        key: 'GITHUB_TOKEN',
+        value: '',
+        comment: 'Optional personal access token for higher release rate limits',
+        type: { typeId: 'secret', label: 'SENSITIVE_SECRET', isSecret: true, badgeClass: 'badge-tag-critical' },
+        required: false,
+      },
+    ],
+  },
+  depData: {
+    hasManifest: true,
+    manifestType: 'package.json',
+    totalCount: 16,
+    prodCount: 4,
+    devCount: 12,
+    peerCount: 0,
+    signatures: {
+      framework: 'Vite Core Toolchain',
+      bundler: 'Rollup & esbuild',
+      testRunner: 'Vitest (v2.1.0)',
+      styling: 'PostCSS / Native CSS',
+    },
+    categories: {
+      frameworks: {
+        label: 'CORE_FRAMEWORKS & RUNTIMES',
+        badge: 'badge-tag-nominal',
+        packages: [
+          { name: 'esbuild', version: '^0.24.0', isDev: false },
+          { name: 'rollup', version: '^4.24.0', isDev: false },
+        ],
+      },
+      build: {
+        label: 'BUILD, BUNDLERS & COMPILERS',
+        badge: 'badge-tag-info',
+        packages: [
+          { name: 'typescript', version: '^5.6.3', isDev: true },
+          { name: 'postcss', version: '^8.4.47', isDev: false },
+          { name: 'tsup', version: '^8.3.0', isDev: true },
+        ],
+      },
+      testing: {
+        label: 'TESTING & QA HARNESSES',
+        badge: 'badge-tag-warning',
+        packages: [
+          { name: 'vitest', version: '^2.1.3', isDev: true },
+          { name: 'playwright', version: '^1.48.1', isDev: true },
+        ],
+      },
+      data: {
+        label: 'STATE, ORM & VALIDATION',
+        badge: 'badge-tag',
+        packages: [],
+      },
+      styling: {
+        label: 'STYLING, DESIGN & ICONS',
+        badge: 'badge-tag',
+        packages: [],
+      },
+      other: {
+        label: 'GENERAL_UTILITIES & ECOSYSTEM',
+        badge: 'badge-tag',
+        packages: [
+          { name: 'chokidar', version: '^4.0.1', isDev: false },
+          { name: 'magic-string', version: '^0.30.12', isDev: false },
+          { name: 'picocolors', version: '^1.1.1', isDev: false },
+        ],
+      },
+    },
+    allDependencies: [
+      { name: 'esbuild', version: '^0.24.0', type: 'prod', npmUrl: 'https://www.npmjs.com/package/esbuild' },
+      { name: 'rollup', version: '^4.24.0', type: 'prod', npmUrl: 'https://www.npmjs.com/package/rollup' },
+      { name: 'postcss', version: '^8.4.47', type: 'prod', npmUrl: 'https://www.npmjs.com/package/postcss' },
+      { name: 'chokidar', version: '^4.0.1', type: 'prod', npmUrl: 'https://www.npmjs.com/package/chokidar' },
+      { name: 'typescript', version: '^5.6.3', type: 'dev', npmUrl: 'https://www.npmjs.com/package/typescript' },
+      { name: 'vitest', version: '^2.1.3', type: 'dev', npmUrl: 'https://www.npmjs.com/package/vitest' },
+      { name: 'playwright', version: '^1.48.1', type: 'dev', npmUrl: 'https://www.npmjs.com/package/playwright' },
+      { name: 'tsup', version: '^8.3.0', type: 'dev', npmUrl: 'https://www.npmjs.com/package/tsup' },
+    ],
+  },
   isPartial: false,
 };
