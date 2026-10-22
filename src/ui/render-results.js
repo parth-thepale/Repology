@@ -53,7 +53,7 @@ function getLanguageShares(languages = {}) {
  * @param {Object} params.data - Output from analyzeRepository
  * @param {() => void} params.onChangeRepo
  */
-export function renderResults(container, { data, onChangeRepo }) {
+export function renderResults(container, { data, onChangeRepo, onCompare }) {
   container.innerHTML = '';
 
   const {
@@ -244,8 +244,30 @@ export function renderResults(container, { data, onChangeRepo }) {
   actionsGroup.appendChild(shareBtn);
   actionsGroup.appendChild(copyMdBtn);
   actionsGroup.appendChild(exportJsonBtn);
+  // Compare Button
+  const vsCompareBtn = document.createElement('button');
+  vsCompareBtn.type = 'button';
+  vsCompareBtn.className = 'btn btn-secondary btn-sm';
+  vsCompareBtn.textContent = '[VS_COMPARE]';
+  vsCompareBtn.title = 'Pit this repository against an alternative in a side-by-side benchmark';
+  vsCompareBtn.addEventListener('click', () => {
+    const defaultAlt =
+      owner === 'vitejs'
+        ? 'webpack/webpack'
+        : owner === 'facebook'
+        ? 'vuejs/core'
+        : owner === 'expressjs'
+        ? 'fastify/fastify'
+        : '';
+    const opponent = prompt('Enter alternative repository to compare against (owner/repo):', defaultAlt);
+    if (opponent && opponent.trim()) {
+      onCompare?.(`${owner}/${repo}`, opponent.trim());
+    }
+  });
+
   actionsGroup.appendChild(exportHtmlBtn);
   actionsGroup.appendChild(badgeBtn);
+  actionsGroup.appendChild(vsCompareBtn);
   actionsGroup.appendChild(changeBtn);
   actionsGroup.appendChild(ghLink);
   deckTop.appendChild(actionsGroup);
@@ -382,6 +404,7 @@ export function renderResults(container, { data, onChangeRepo }) {
       Object.keys(panels).forEach((pId) => {
         panels[pId].style.display = pId === tab.id ? 'block' : 'none';
       });
+      window.location.hash = tab.id;
     });
 
     switchboard.appendChild(btn);
@@ -779,4 +802,13 @@ export function renderResults(container, { data, onChangeRepo }) {
 
   resultsConsole.appendChild(panelsContainer);
   container.appendChild(resultsConsole);
+
+  // Deep-link anchor initialization: #env, #setup, #files, etc.
+  const initialHash = (window.location.hash || '').replace(/^#/, '').replace(/^tab-/, '');
+  if (initialHash && tabs.some((t) => t.id === initialHash)) {
+    const targetTabBtn = switchboard.querySelector(`#tab-${initialHash}`);
+    if (targetTabBtn) {
+      targetTabBtn.click();
+    }
+  }
 }

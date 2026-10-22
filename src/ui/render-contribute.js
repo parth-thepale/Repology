@@ -1,8 +1,10 @@
 /**
  * INDUSTRIAL MODERNIST CONTRIBUTE MATRIX
  * High-density vector nodes for issues, pull requests, contributing guidelines,
- * repository readiness scorecard, and PR template generation.
+ * repository readiness scorecard, live good-first-issue ticker, and PR template generation.
  */
+
+import { getRepoIssues } from '../services/repository-service.js';
 
 /**
  * @param {HTMLElement} container
@@ -76,7 +78,7 @@ export function renderContribute(container, { owner, repo, metadata, detection, 
   const ghBase = `https://github.com/${owner}/${repo}`;
   const openIssuesCount = typeof metadata.open_issues_count === 'number' ? metadata.open_issues_count : null;
 
-  // 1. Issues Node
+  // 1. Issues Node with Live Ticket Stream
   const issuesNode = document.createElement('div');
   issuesNode.className = 'contribute-node';
   issuesNode.innerHTML = `
@@ -88,8 +90,11 @@ export function renderContribute(container, { owner, repo, metadata, detection, 
       <p class="node-desc">
         Inspect live bug reports, proposed feature requests, or filter by beginner-friendly entry labels.
       </p>
+      <div class="live-issues-stream" id="live-issues-stream" style="margin-top: 0.75rem; border-top: 1px solid var(--border-subtle); padding-top: 0.5rem;">
+        <span class="text-muted" style="font-family: var(--font-mono); font-size: 11px;">[SCANNING_GOOD_FIRST_ISSUES...]</span>
+      </div>
     </div>
-    <div class="node-actions">
+    <div class="node-actions" style="margin-top: 0.75rem;">
       <a href="${ghBase}/issues" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer">
         ALL_ISSUES ↗
       </a>
@@ -99,6 +104,39 @@ export function renderContribute(container, { owner, repo, metadata, detection, 
     </div>
   `;
   grid.appendChild(issuesNode);
+
+  // Lazy live issues probe
+  getRepoIssues(owner, repo, { label: 'good first issue', limit: 4 })
+    .then((res) => {
+      const stream = issuesNode.querySelector('#live-issues-stream');
+      if (!stream) return;
+      if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+        stream.innerHTML = `
+          <div style="font-family: var(--font-mono); font-size: 10px; color: #10B981; font-weight: 700; margin-bottom: 0.35rem;">
+            LIVE_GOOD_FIRST_ISSUES [FOUND: ${res.data.length}]:
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+            ${res.data
+              .map(
+                (issue) => `
+              <a href="${issue.html_url}" target="_blank" rel="noopener noreferrer" class="live-issue-link" style="display: flex; align-items: center; justify-content: space-between; text-decoration: none; font-family: var(--font-mono); font-size: 11px; background-color: #030303; border: 1px solid var(--border-subtle); padding: 0.35rem 0.5rem; transition: all var(--duration-snap);">
+                <span style="color: #FFFFFF; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${issue.number} ${issue.title}</span>
+                <span class="badge-tag" style="font-size: 9px;">${issue.comments} 💬</span>
+              </a>
+            `
+              )
+              .join('')}
+          </div>
+        `;
+      } else {
+        stream.innerHTML =
+          '<span class="text-muted" style="font-family: var(--font-mono); font-size: 11px;">No open tickets labeled "good first issue".</span>';
+      }
+    })
+    .catch(() => {
+      const stream = issuesNode.querySelector('#live-issues-stream');
+      if (stream) stream.style.display = 'none';
+    });
 
   // 2. Pull Requests Node
   const prNode = document.createElement('div');

@@ -39,6 +39,8 @@ import {
 import { DEMO_SNAPSHOT } from './services/demo-snapshot.js';
 import { renderLanding } from './ui/render-landing.js';
 import { renderResults } from './ui/render-results.js';
+import { renderCompare } from './ui/render-compare.js';
+import { setupCommandPalette } from './ui/render-palette.js';
 import { renderLoadingSkeleton, renderErrorState } from './ui/render-states.js';
 
 const getAppContainer = () => document.getElementById('app');
@@ -100,6 +102,14 @@ function getRepoFromUrl() {
  * Update browser URL query string without page reload.
  * @param {string} repoFullName
  */
+function syncUrlWithComparison(repoA, repoB) {
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('target', repoA);
+  currentUrl.searchParams.set('vs', repoB);
+  currentUrl.hash = '';
+  window.history.pushState({ target: repoA, vs: repoB }, '', currentUrl.toString());
+}
+
 function syncUrlWithRepo(repoFullName) {
   const currentUrl = new URL(window.location.href);
   if (repoFullName) {
@@ -214,6 +224,80 @@ export function handleLoadDemo() {
  * Main exploration dispatcher.
  * @param {string} rawInput
  */
+
+/**
+ * Dual telemetry benchmark comparison orchestrator ("Dogfight Mode").
+ * @param {string} rawInputA
+ * @param {string} rawInputB
+ */
+export async function handleCompare(rawInputA, rawInputB) {
+  const parsedA = parseRepoUrl(rawInputA);
+  const parsedB = parseRepoUrl(rawInputB);
+
+  if (!parsedA.ok) {
+    showLanding(parsedA.error);
+    return;
+  }
+  if (!parsedB.ok) {
+    showLanding(parsedB.error);
+    return;
+  }
+
+  const nameA = parsedA.data.fullName;
+  const nameB = parsedB.data.fullName;
+  lastSearchedRepo = nameA;
+  syncUrlWithComparison(nameA, nameB);
+
+  updateSeoMeta({
+    title: `${nameA.toUpperCase()} VS ${nameB.toUpperCase()} // RADAR_DOGFIGHT`,
+    description: `Comparative telemetry benchmark: ${nameA} versus ${nameB} on Repology.`,
+    canonicalUrl: `https://repology.vercel.app/?target=${encodeURIComponent(nameA)}&vs=${encodeURIComponent(nameB)}`,
+  });
+
+  const appContainer = getAppContainer();
+  if (!appContainer) return;
+
+  const thisRequestId = ++currentRequestId;
+  renderLoadingSkeleton(appContainer, `BENCHMARKING DUAL TARGETS: ${nameA} VS ${nameB}...`);
+
+  const [resA, resB] = await Promise.all([
+    analyzeRepository(parsedA.data.owner, parsedA.data.repo),
+    analyzeRepository(parsedB.data.owner, parsedB.data.repo),
+  ]);
+
+  updateHeaderTelemetry();
+
+  if (thisRequestId !== currentRequestId) return;
+
+  if (!resA.ok) {
+    renderErrorState(appContainer, {
+      error: resA.error,
+      onRetry: () => handleCompare(nameA, nameB),
+      onReset: () => showLanding(),
+    });
+    return;
+  }
+  if (!resB.ok) {
+    renderErrorState(appContainer, {
+      error: resB.error,
+      onRetry: () => handleCompare(nameA, nameB),
+      onReset: () => showLanding(),
+    });
+    return;
+  }
+
+  saveRecentRepo(nameA);
+  saveRecentRepo(nameB);
+
+  renderCompare(appContainer, {
+    dataA: resA.data,
+    dataB: resB.data,
+    onBack: () => handleExplore(nameA),
+    onSwap: () => handleCompare(nameB, nameA),
+    onExploreSingle: (r) => handleExplore(r),
+  });
+}
+
 export async function handleExplore(rawInput) {
   // 1. Client-side validation before network request (FR-02)
   const parsed = parseRepoUrl(rawInput);
@@ -289,6 +373,7 @@ export async function handleExplore(rawInput) {
   renderResults(appContainer, {
     data: result.data,
     onChangeRepo: () => showLanding(),
+    onCompare: (current, vsTarget) => handleCompare(current, vsTarget),
   });
 }
 
@@ -366,6 +451,33 @@ function init() {
 
   // Setup Ephemeral Token Dialog
   setupTokenDialog();
+  // Setup Hardware Command Palette
+  const palette = setupCommandPalette({
+    onSelectTab: (tabId) => {
+      document.getElementById(tabId)?.click();
+    },
+    onAction: (actionId) => {
+      if (actionId === 'action-gen-env') {
+        document.getElementById('tab-env')?.click();
+      } else if (actionId === 'action-compare') {
+        const current = lastSearchedRepo || 'vitejs/vite';
+        const opponent = prompt(`Enter alternative repository to compare against ${current}:`, 'webpack/webpack');
+        if (opponent && opponent.trim()) {
+          handleCompare(current, opponent.trim());
+        }
+      } else if (actionId === 'action-copy-md') {
+        document.querySelector('.deck-actions button[title*="markdown"]')?.click();
+      } else if (actionId === 'action-export-dossier') {
+        document.querySelector('.deck-actions button[title*="offline HTML"]')?.click();
+      } else if (actionId === 'action-badge') {
+        document.querySelector('.deck-actions button[title*="badge"]')?.click();
+      }
+    },
+    onExplore: (repo) => {
+      handleExplore(repo);
+    },
+    getCurrentRepo: () => lastSearchedRepo,
+  });
 
   // Global Keyboard shortcuts:
   // - '/' or 'Cmd+K' to focus search
@@ -382,7 +494,7 @@ function init() {
         showLanding();
       }
     } else if (
-      (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) &&
+      ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') ? (e.preventDefault(), palette.open()) : (e.key === '/') &&
       !isModalOpen &&
       document.activeElement?.tagName !== 'INPUT'
     ) {
@@ -434,10 +546,15 @@ function init() {
     .then(() => updateHeaderTelemetry())
     .catch(() => {});
 
-  // Check for initial repository in URL
-  const initialRepo = getRepoFromUrl();
-  if (initialRepo) {
-    handleExplore(initialRepo);
+  // Check for initial repository or dual comparison in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetRepo = urlParams.get('target') || urlParams.get('repo');
+  const vsRepo = urlParams.get('vs');
+
+  if (targetRepo && vsRepo) {
+    handleCompare(targetRepo, vsRepo);
+  } else if (targetRepo) {
+    handleExplore(targetRepo);
   } else {
     showLanding();
   }

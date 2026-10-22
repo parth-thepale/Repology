@@ -103,6 +103,98 @@ export async function getManifestContent(owner, repo, defaultBranch = 'main', ma
 }
 
 /**
+ * Fetch open issues with specific labels (e.g. "good first issue").
+ * @param {string} owner
+ * @param {string} repo
+ * @param {object} [options]
+ * @param {string} [options.label='good first issue']
+ * @param {string} [options.state='open']
+ * @param {number} [options.perPage=4]
+ */
+export async function getRepoIssues(owner, repo, { label = 'good first issue', state = 'open', perPage = 4 } = {}) {
+  const query = label
+    ? `?labels=${encodeURIComponent(label)}&state=${encodeURIComponent(state)}&per_page=${perPage}`
+    : `?state=${encodeURIComponent(state)}&per_page=${perPage}`;
+  return githubFetch(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues${query}`);
+}
+
+/**
+ * Calculates comparative telemetry metrics between two repositories.
+ * @param {object} dataA
+ * @param {object} dataB
+ * @returns {object}
+ */
+export function calculateComparisonMetrics(dataA, dataB) {
+  const starsA = dataA.metadata?.stargazers_count || 0;
+  const starsB = dataB.metadata?.stargazers_count || 0;
+  const starDelta = starsA - starsB;
+
+  const forksA = dataA.metadata?.forks_count || 0;
+  const forksB = dataB.metadata?.forks_count || 0;
+
+  const issuesA = dataA.metadata?.open_issues_count || 0;
+  const issuesB = dataB.metadata?.open_issues_count || 0;
+
+  const daysA = dataA.pulse?.diffDays ?? 999;
+  const daysB = dataB.pulse?.diffDays ?? 999;
+
+  const depsA = dataA.depData?.prodCount ?? 0;
+  const depsB = dataB.depData?.prodCount ?? 0;
+
+  return {
+    starsA,
+    starsB,
+    starDelta,
+    forksA,
+    forksB,
+    issuesA,
+    issuesB,
+    daysA,
+    daysB,
+    depsA,
+    depsB,
+    licenseA: dataA.metadata?.license?.spdx_id || 'None',
+    licenseB: dataB.metadata?.license?.spdx_id || 'None',
+    cadenceA: dataA.pulse?.label || 'ACTIVE',
+    cadenceB: dataB.pulse?.label || 'ACTIVE',
+    winnerStars: starDelta > 0 ? 'A' : starDelta < 0 ? 'B' : 'TIE',
+    winnerVelocity: daysA < daysB ? 'A' : daysA > daysB ? 'B' : 'TIE',
+  };
+}
+
+/**
+ * Generates an executive Markdown benchmark comparison report.
+ * @param {object} dataA
+ * @param {object} dataB
+ * @param {object} metrics
+ * @returns {string}
+ */
+export function generateComparisonMarkdown(dataA, dataB, metrics) {
+  const repoA = `${dataA.owner}/${dataA.repo}`;
+  const repoB = `${dataB.owner}/${dataB.repo}`;
+
+  return `# Repology Radar Dogfight: ${repoA} vs ${repoB}
+*Generated at ${new Date().toISOString()} via Repology Control Plane*
+
+## Telemetry Benchmark Matrix
+| Metric | ${repoA} | ${repoB} | Advantage |
+| :--- | :--- | :--- | :--- |
+| **Stars** | ${metrics.starsA.toLocaleString()} | ${metrics.starsB.toLocaleString()} | ${metrics.winnerStars === 'A' ? repoA : metrics.winnerStars === 'B' ? repoB : 'Tie'} |
+| **Forks** | ${metrics.forksA.toLocaleString()} | ${metrics.forksB.toLocaleString()} | ${metrics.forksA >= metrics.forksB ? repoA : repoB} |
+| **Open Issues** | ${metrics.issuesA.toLocaleString()} | ${metrics.issuesB.toLocaleString()} | ${metrics.issuesA <= metrics.issuesB ? repoA : repoB} |
+| **Last Push** | ${metrics.daysA === 0 ? 'Today' : metrics.daysA + 'd ago'} | ${metrics.daysB === 0 ? 'Today' : metrics.daysB + 'd ago'} | ${metrics.winnerVelocity === 'A' ? repoA : metrics.winnerVelocity === 'B' ? repoB : 'Tie'} |
+| **Prod Dependencies** | ${metrics.depsA} | ${metrics.depsB} | ${metrics.depsA <= metrics.depsB ? repoA : repoB} |
+| **SPDX License** | ${metrics.licenseA} | ${metrics.licenseB} | — |
+
+## Architecture & Toolchain Comparison
+- **${repoA}**: ${dataA.depData?.signatures?.framework || 'Vanilla'} with ${dataA.depData?.signatures?.bundler || 'Standard toolchain'}
+- **${repoB}**: ${dataB.depData?.signatures?.framework || 'Vanilla'} with ${dataB.depData?.signatures?.bundler || 'Standard toolchain'}
+
+---
+*Airgapped comparison benchmark. Zero code execution.*`;
+}
+
+/**
  * Evaluates repository cadence, maintenance pulse, and license risk.
  * @param {object} metadata
  * @returns {object}
