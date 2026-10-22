@@ -6,6 +6,7 @@
 
 import { formatCompactNumber, formatNullable, formatDate } from '../core/formatters.js';
 import { generateMarkdownReport, generateJsonReport } from '../services/repository-service.js';
+import { generateHtmlDossier } from '../services/dossier-generator.js';
 import { explainRepository } from '../core/repo-explainer.js';
 import { renderFiles } from './render-files.js';
 import { renderReadme } from './render-readme.js';
@@ -204,9 +205,47 @@ export function renderResults(container, { data, onChangeRepo }) {
   ghLink.rel = 'noopener noreferrer';
   ghLink.textContent = 'GH_SOURCE ↗';
 
+  // Standalone HTML Dossier Button
+  const exportHtmlBtn = document.createElement('button');
+  exportHtmlBtn.type = 'button';
+  exportHtmlBtn.className = 'btn btn-secondary btn-sm';
+  exportHtmlBtn.textContent = '[HTML_DOSSIER]';
+  exportHtmlBtn.title = 'Download self-contained offline HTML architecture report';
+  exportHtmlBtn.addEventListener('click', () => {
+    const htmlStr = generateHtmlDossier(data);
+    const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `repology-dossier-${owner}-${repo}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // README Badge Snippet Button
+  const badgeBtn = document.createElement('button');
+  badgeBtn.type = 'button';
+  badgeBtn.className = 'btn btn-secondary btn-sm';
+  badgeBtn.textContent = '[README_BADGE]';
+  badgeBtn.title = 'Copy dynamic Repology badge markdown for your repository README';
+  badgeBtn.addEventListener('click', async () => {
+    const badgeSnippet = `[![Repology Radar](https://img.shields.io/badge/REPOLOGY-RADAR_ORIENTED-000000?style=for-the-badge&logo=radar)](https://repology.vercel.app/?target=${owner}/${repo})`;
+    try {
+      await navigator.clipboard.writeText(badgeSnippet);
+      badgeBtn.textContent = '[BADGE_COPIED ✓]';
+      setTimeout(() => {
+        badgeBtn.textContent = '[README_BADGE]';
+      }, 2000);
+    } catch {
+      badgeBtn.textContent = '[COPY_FAILED]';
+    }
+  });
+
   actionsGroup.appendChild(shareBtn);
   actionsGroup.appendChild(copyMdBtn);
   actionsGroup.appendChild(exportJsonBtn);
+  actionsGroup.appendChild(exportHtmlBtn);
+  actionsGroup.appendChild(badgeBtn);
   actionsGroup.appendChild(changeBtn);
   actionsGroup.appendChild(ghLink);
   deckTop.appendChild(actionsGroup);

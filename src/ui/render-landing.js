@@ -15,7 +15,7 @@ import { APP_CONFIG } from '../core/config.js';
  * @param {string} [options.initialValue='']
  * @param {string} [options.initialError='']
  */
-export function renderLanding(container, { onSubmit, onLoadDemo, initialValue = '', initialError = '' }) {
+export function renderLanding(container, { onSubmit, onLoadDemo, initialValue = '', initialError = '', recentRepos = [] }) {
   container.innerHTML = '';
 
   const consoleWrapper = document.createElement('div');
@@ -93,8 +93,25 @@ export function renderLanding(container, { onSubmit, onLoadDemo, initialValue = 
   keycapHint.className = 'input-keycap-hint';
   keycapHint.innerHTML = '<span class="keycap">ENTER ↵</span>';
 
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'btn-input-clear';
+  clearBtn.setAttribute('aria-label', 'Clear search input');
+  clearBtn.textContent = '✕';
+  clearBtn.style.display = initialValue ? 'inline-flex' : 'none';
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    input.focus();
+  });
+
+  input.addEventListener('input', () => {
+    clearBtn.style.display = input.value ? 'inline-flex' : 'none';
+  });
+
   prefixBox.appendChild(promptPrefix);
   prefixBox.appendChild(input);
+  prefixBox.appendChild(clearBtn);
   prefixBox.appendChild(keycapHint);
 
   const submitBtn = document.createElement('button');
@@ -165,6 +182,33 @@ export function renderLanding(container, { onSubmit, onLoadDemo, initialValue = 
   });
 
   radarPanel.appendChild(presetsRow);
+
+  if (recentRepos && recentRepos.length > 0) {
+    const recentRow = document.createElement('div');
+    recentRow.className = 'presets-row recent-targets-row';
+    recentRow.style.marginTop = '0.4rem';
+
+    const recentLabel = document.createElement('span');
+    recentLabel.className = 'presets-label';
+    recentLabel.textContent = 'RECENT_INSPECTIONS:';
+    recentRow.appendChild(recentLabel);
+
+    recentRepos.slice(0, 4).forEach((r) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'preset-chip';
+      chip.textContent = `[${r}]`;
+      chip.title = `Re-inspect ${r}`;
+      chip.addEventListener('click', () => {
+        input.value = r;
+        errorEl.textContent = '';
+        onSubmit(r);
+      });
+      recentRow.appendChild(chip);
+    });
+
+    radarPanel.appendChild(recentRow);
+  }
   heroBlock.appendChild(radarPanel);
   consoleWrapper.appendChild(heroBlock);
 

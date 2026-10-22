@@ -2306,3 +2306,45 @@
 }
 
 
+
+/* ==========================================================================
+   Search Input Clear & Extension Chips & Accessibility Focus
+   ========================================================================== */
+
+.btn-input-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  transition: color var(--duration-snap) var(--ease-mechanical);
+}
+
+.btn-input-clear:hover {
+  color: #FFFFFF;
+}
+
+.file-ext-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.recent-targets-row {
+  opacity: 0.9;
+}
+
+/* Accessible, crisp hardware focus states */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 1px solid #EDEDED !important;
+  outline-offset: 1px;
+}

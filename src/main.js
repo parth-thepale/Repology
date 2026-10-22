@@ -1,3 +1,20 @@
+
+export function saveRecentRepo(fullName) {
+  try {
+    const raw = localStorage.getItem('repology_recent_repos') || '[]';
+    const list = JSON.parse(raw).filter((r) => r.toLowerCase() !== fullName.toLowerCase());
+    list.unshift(fullName);
+    localStorage.setItem('repology_recent_repos', JSON.stringify(list.slice(0, 4)));
+  } catch {}
+}
+
+export function getRecentRepos() {
+  try {
+    return JSON.parse(localStorage.getItem('repology_recent_repos') || '[]');
+  } catch {
+    return [];
+  }
+}
 /**
  * Main application wiring and state manager:
  * - URL state synchronization (?target=owner/repo or ?repo=owner/repo)
@@ -161,6 +178,7 @@ export function showLanding(initialError = '') {
   renderLanding(appContainer, {
     initialValue: lastSearchedRepo,
     initialError,
+    recentRepos: getRecentRepos(),
     onSubmit: (input) => {
       handleExplore(input);
     },
@@ -266,6 +284,8 @@ export async function handleExplore(rawInput) {
     ogDescription: repoDesc.length > 200 ? repoDesc.slice(0, 197) + '...' : repoDesc,
   });
 
+  saveRecentRepo(fullName);
+
   renderResults(appContainer, {
     data: result.data,
     onChangeRepo: () => showLanding(),
@@ -294,6 +314,20 @@ function setupTokenDialog() {
 
   closeBtn?.addEventListener('click', () => {
     dialog.close();
+  });
+
+  // Light-dismiss backdrop click fallback for browsers without native closedby
+  dialog.addEventListener('click', (event) => {
+    if (event.target !== dialog) return;
+    const rect = dialog.getBoundingClientRect();
+    const isInside =
+      rect.top <= event.clientY &&
+      event.clientY <= rect.top + rect.height &&
+      rect.left <= event.clientX &&
+      event.clientX <= rect.left + rect.width;
+    if (!isInside) {
+      dialog.close();
+    }
   });
 
   saveBtn?.addEventListener('click', async () => {
